@@ -23,7 +23,7 @@ module.exports = {
 
             const embed = new Discord.MessageEmbed()
             embed.setTitle(`Besoin D'aide ?`)
-            embed.setURL('https://discord.gg/PuqkTuxtFA')
+            embed.setURL('https://discord.gg/XFMx9ftYv9')
             embed.setColor(color)
             embed.setDescription(`Pour rejoindre Le serveur support [Clique ici](https://discord.gg/XFMx9ftYv9)`)
             embed.setTimestamp()
