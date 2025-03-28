@@ -25,7 +25,7 @@ module.exports = {
             embed.setTimestamp()
             embed.setFooter(`${client.config.name}`)
             embed.addFields(
-                { name: '👑 Owner / Developer :', value: '<@1208337813339373569>', inline: true },
+                { name: '👑 Owner / Developer :', value: '<@880850845124669510>', inline: true },
                 { name: '🔌 Latence Ping Bot :', value: `\`${client.ws.ping}Ms\`` },
                 { name: '🚀 Total Server(s) :', value: `\`${client.guilds.cache.size}\``, inline: true },
                 { name: '👥 Total User(s) :', value: `\`${client.guilds.cache.reduce((a, b) => a + b.memberCount, 0)}\``, inline: true },
