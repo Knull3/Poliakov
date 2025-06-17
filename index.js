@@ -1,3 +1,6 @@
+// Polyfill for ReadableStream
+import 'web-streams-polyfill/dist/polyfill.mjs';
+
 import { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder } from 'discord.js';
 import { readdirSync } from 'fs';
 import { fileURLToPath } from 'url';

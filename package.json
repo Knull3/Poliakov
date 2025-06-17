@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "start": "node index.js"
+    "start": "node --experimental-fetch index.js"
   },
   "dependencies": {
-    "discord.js": "^14.20.0"
+    "discord.js": "^14.20.0",
+    "web-streams-polyfill": "^3.2.1"
   }
 }
