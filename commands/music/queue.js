@@ -3,20 +3,13 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 export default {
   data: new SlashCommandBuilder()
     .setName('queue')
-    .setDescription('Affiche la liste de lecture'),
-  
-  async execute(interaction, client) {
+    .setDescription('Afficher la file d\'attente de musique'),
+  async execute(interaction) {
     const embed = new EmbedBuilder()
       .setColor('#8B0000')
-      .setTitle('📋 Musique')
-      .setDescription('Les commandes de musique sont en cours de développement.')
-      .addFields(
-        { name: 'Action', value: 'Afficher la queue', inline: true },
-        { name: 'Statut', value: '⏳ En développement', inline: true }
-      )
-      .setTimestamp()
-      .setFooter({ text: client.config.name });
-    
+      .setTitle('🎶 File d\'attente')
+      .setDescription('Aucune musique dans la file d\'attente (stub).')
+      .setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }
 }; 

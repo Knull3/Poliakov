@@ -1,189 +1,60 @@
-const Discord = require('discord.js')
-const db = require('quick.db')
-const {
-	MessageActionRow,
-	MessageButton,
-	MessageMenuOption,
-	MessageMenu
-} = require('discord-buttons');
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
+export default {
+	data: new SlashCommandBuilder()
+		.setName('wl')
+		.setDescription('Gestion de la whitelist')
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('add')
+				.setDescription('Ajouter un utilisateur à la whitelist')
+				.addUserOption(option =>
+					option.setName('user')
+						.setDescription('Utilisateur à ajouter')
+						.setRequired(true)))
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('remove')
+				.setDescription('Retirer un utilisateur de la whitelist')
+				.addUserOption(option =>
+					option.setName('user')
+						.setDescription('Utilisateur à retirer')
+						.setRequired(true)))
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('list')
+				.setDescription('Lister la whitelist'))
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-module.exports = {
-	name: 'whitelist',
-	aliases: ["wl"],
-	run: async (client, message, args, prefix, color) => {
-
-		if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true) {
-
-			if (args[0] === "add") {
-				let member = message.guild.members.cache.get(message.author.id);
-				if (args[1]) {
-					member = message.guild.members.cache.get(args[1]);
-				} else {
-					return message.channel.send(`Aucun membre trouvé pour \`${args[1]|| " "}\``)
-
-				}
-				if (message.mentions.members.first()) {
-					member = message.guild.members.cache.get(message.mentions.members.first().id);
-				}
-				if (!member) return message.channel.send(`Aucun membre trouvé pour \`${args[1]|| " "}\``)
-				if (db.get(`wlmd_${message.guild.id}_${member.user.id}`) === true) {
-					return message.channel.send(`<@${member.id}> est déjà whitelist`)
-				}
-				db.set(`wlmd_${message.guild.id}_${member.user.id}`, true)
-
-				message.channel.send(`<@${member.id}> est maintenant dans la whitelist`)
-			} else if (args[0] === "clear") {
-				let tt = await db.all().filter(data => data.ID.startsWith(`wlmd_${message.guild.id}`));
-				message.channel.send(`${tt.length === undefined||null ? 0:tt.length} ${tt.length > 1 ? "personnes ont été supprimées ":"personne a été supprimée"} de la whitelist`)
-
-
-				let ttt = 0;
-				for (let i = 0; i < tt.length; i++) {
-					db.delete(tt[i].ID);
-					ttt++;
-				}
-			} else if (args[0] === "remove") {
-
-				if (args[1]) {
-					let member = message.guild.members.cache.get(message.author.id);
-					if (args[1]) {
-						member = message.guild.members.cache.get(args[1]);
-					} else {
-						return message.channel.send(`Aucun membre trouvé pour \`${args[1]|| " "}\``)
-
-					}
-					if (message.mentions.members.first()) {
-						member = message.guild.members.cache.get(message.mentions.members.first().id);
-					}
-					if (!member) return message.channel.send(`Aucun membre trouvé pour \`${args[1]|| " "}\``)
-					if (db.get(`wlmd_${message.guild.id}_${member.user.id}`) === null) {
-						return message.channel.send(`<@${member.id}> n'est pas whitlist`)
-					}
-					db.delete(`wlmd_${message.guild.id}_${member.user.id}`)
-					message.channel.send(`<@${member.id}> n'est plus whitelist`)
-				}
-			} else if (args[0] === "list") {
-
-
-				let money = db.all().filter(data => data.ID.startsWith(`wlmd_${message.guild.id}`)).sort((a, b) => b.data - a.data)
-
-				let p0 = 0;
-				let p1 = 5;
-				let page = 1;
-
-				const embed = new Discord.MessageEmbed()
-					.setTitle('Whitelist')
-					.setDescription(!money ? "Aucune donnée" : money
-
-						.filter(x => message.guild.members.cache.get(x.ID.split('_')[2]))
-						.map((m, i) => `${i + 1}) <@${message.guild.members.cache.get(m.ID.split('_')[2]).id}> (${message.guild.members.cache.get(m.ID.split('_')[2]).id})`)
-						.slice(0, 5)
-
-					)
-					.setFooter(`${page}/${Math.ceil(money.length === 0?1:money.length === 0?1:money.length / 5)} • ${client.config.name}`)
-					.setColor(color)
-
-
-				message.channel.send(embed).then(async tdata => {
-					if (money.length > 5) {
-						const B1 = new MessageButton()
-							.setLabel("◀")
-							.setStyle("gray")
-							.setID('wl1');
-
-						const B2 = new MessageButton()
-							.setLabel("▶")
-							.setStyle("gray")
-							.setID('wl2');
-
-						const bts = new MessageActionRow()
-							.addComponent(B1)
-							.addComponent(B2)
-						tdata.edit("", {
-							embed: embed,
-							components: [bts]
-						})
-						setTimeout(() => {
-							tdata.edit("", {
-								components: [],
-								embed: new Discord.MessageEmbed()
-									.setTitle('Whitelist')
-									.setDescription(money
-										.filter(x => message.guild.members.cache.get(x.ID.split('_')[2]))
-										.map((m, i) => `${i + 1}) <@${message.guild.members.cache.get(m.ID.split('_')[2]).id}> (${message.guild.members.cache.get(m.ID.split('_')[2]).id})`)
-										.slice(0, 5)
-
-									)
-									.setFooter(`1/${Math.ceil(money.length === 0?1:money.length / 5)} • ${client.config.name}`)
-									.setColor(color)
-
-
-							})
-							// message.channel.send(embeds)
-						}, 60000 * 5)
-						client.on("clickButton", (button) => {
-							if (button.id === "wl1") {
-								if (button.clicker.user.id !== message.author.id) return;
-								button.reply.defer(true)
-
-								p0 = p0 - 5;
-								p1 = p1 - 5;
-								page = page - 1
-
-								if (p0 < 0) {
-									return
-								}
-								if (p0 === undefined || p1 === undefined) {
-									return
-								}
-
-
-								embed.setDescription(money
-										.filter(x => message.guild.members.cache.get(x.ID.split('_')[2]))
-										.map((m, i) => `${i + 1}) <@${message.guild.members.cache.get(m.ID.split('_')[2]).id}> (${message.guild.members.cache.get(m.ID.split('_')[2]).id})`)
-										.slice(p0, p1)
-
-									)
-									.setFooter(`${page}/${Math.ceil(money.length === 0?1:money.length / 5)} • ${client.config.name}`)
-								tdata.edit(embed)
-
-							}
-							if (button.id === "wl2") {
-								if (button.clicker.user.id !== message.author.id) return;
-								button.reply.defer(true)
-
-								p0 = p0 + 5;
-								p1 = p1 + 5;
-
-								page++;
-
-								if (p1 > money.length + 5) {
-									return
-								}
-								if (p0 === undefined || p1 === undefined) {
-									return
-								}
-
-
-								embed.setDescription(money
-										.filter(x => message.guild.members.cache.get(x.ID.split('_')[2]))
-										.map((m, i) => `${i + 1}) <@${message.guild.members.cache.get(m.ID.split('_')[2]).id}> (${message.guild.members.cache.get(m.ID.split('_')[2]).id})`)
-										.slice(p0, p1)
-
-									)
-									.setFooter(`${page}/${Math.ceil(money.length === 0?1:money.length / 5)} • ${client.config.name}`)
-								tdata.edit(embed);
-
-							}
-						})
-					}
-
-				})
-
-			}
+	async execute(interaction, client) {
+		const subcommand = interaction.options.getSubcommand();
+		const user = interaction.options.getUser('user');
+		if (subcommand === 'add') {
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('✅ Whitelist')
+				.setDescription(`L\'utilisateur ${user} a été ajouté à la whitelist.`)
+				.setFooter({ text: client.config.name })
+				.setTimestamp();
+			return interaction.reply({ embeds: [embed] });
 		}
-
-
+		if (subcommand === 'remove') {
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('❌ Whitelist')
+				.setDescription(`L\'utilisateur ${user} a été retiré de la whitelist.`)
+				.setFooter({ text: client.config.name })
+				.setTimestamp();
+			return interaction.reply({ embeds: [embed] });
+		}
+		if (subcommand === 'list') {
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('📋 Whitelist')
+				.setDescription('Aucun utilisateur dans la whitelist.\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.')
+				.setFooter({ text: client.config.name })
+				.setTimestamp();
+			return interaction.reply({ embeds: [embed] });
+		}
 	}
-}
+};

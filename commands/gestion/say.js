@@ -1,34 +1,18 @@
-const Discord = require('discord.js')
-const db = require('quick.db')
-const {
-	MessageActionRow,
-	MessageButton,
-	MessageMenuOption,
-	MessageMenu
-} = require('discord-buttons');
+import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 
-module.exports = {
-	name: 'say',
-	aliases: [],
+export default {
+	data: new SlashCommandBuilder()
+		.setName('say')
+		.setDescription('Faire parler le bot')
+		.addStringOption(option =>
+			option.setName('message')
+				.setDescription('Message à envoyer')
+				.setRequired(true))
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
-	run: async (client, message, args, prefix, color) => {
-		message.delete();
-
-		let perm = ""
-		message.member.roles.cache.forEach(role => {
-			if (db.get(`admin_${message.guild.id}_${role.id}`)) perm = null
-			if (db.get(`ownerp_${message.guild.id}_${role.id}`)) perm = true
-		})
-		if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true || perm) {
-			let tosay = args.join(" ")
-			if (!tosay) return
-			if (tosay.includes("discord.gg/") || tosay.includes("https://discord.gg/")) return
-			if (tosay.includes("@everyone") && !message.member.hasPermission("MENTION_EVERYONE") || tosay.includes("@here") && !message.member.hasPermission("MENTION_EVERYONE")) return
-
-			message.channel.send(tosay)
-
-
-
-		}
+	async execute(interaction) {
+		const message = interaction.options.getString('message');
+		await interaction.reply({ content: 'Message envoyé !', ephemeral: true });
+		await interaction.channel.send(message);
 	}
-}
+};

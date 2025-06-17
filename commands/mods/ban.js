@@ -3,7 +3,7 @@ import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.
 export default {
 	data: new SlashCommandBuilder()
 		.setName('ban')
-		.setDescription('Bannir un utilisateur')
+		.setDescription('Bannir un utilisateur du serveur')
 		.addUserOption(option =>
 			option.setName('user')
 				.setDescription('Utilisateur à bannir')
@@ -22,7 +22,7 @@ export default {
 	
 	async execute(interaction, client) {
 		const user = interaction.options.getUser('user')
-		const reason = interaction.options.getString('reason') || 'Aucune raison spécifiée'
+		const reason = interaction.options.getString('reason') || 'Aucune raison fournie'
 		const days = interaction.options.getInteger('days') || 0
 		
 		const member = interaction.guild.members.cache.get(user.id)
@@ -44,15 +44,8 @@ export default {
 			
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
-				.setTitle('🔨 Utilisateur banni')
-				.setThumbnail(user.displayAvatarURL())
-				.addFields(
-					{ name: '👤 Utilisateur', value: `${user.tag} (${user.id})`, inline: true },
-					{ name: '🛡️ Modérateur', value: `${interaction.user.tag}`, inline: true },
-					{ name: '📅 Date', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
-					{ name: '📝 Raison', value: reason, inline: false }
-				)
-				.setFooter({ text: client.config.name })
+				.setTitle('🔨 Bannissement')
+				.setDescription(`L'utilisateur ${user} a été banni.\nRaison : ${reason}`)
 				.setTimestamp()
 			
 			return interaction.reply({ embeds: [embed] })

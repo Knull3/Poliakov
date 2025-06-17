@@ -1,33 +1,18 @@
-const {
-	MessageEmbed
-} = require('discord.js')
-const db = require('quick.db')
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
-module.exports = {
-	name: 'raidlog',
-	aliases: [],
-	run: async (client, message, args, prefix, color) => {
+export default {
+	data: new SlashCommandBuilder()
+		.setName('raidlog')
+		.setDescription('Afficher les logs de raid')
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-		if (client.config.owner.includes(message.author.id)) {
-
-			let ss = message.mentions.channels.first() || message.guild.channels.cache.get(args[0])
-			if (args[0] === "on") {
-				const channel = message.channel
-
-				db.set(`${message.guild.id}.raidlog`, channel.id)
-				message.channel.send(`Le salon ${channel} sera maintenant utilisé pour envoyer les logs de raid`)
-			} else if (args[0] === "off") {
-				db.set(`${message.guild.id}.raidlog`, null)
-				message.channel.send(`Logs de raid désactivés`)
-
-			} else
-			if (ss) {
-				db.set(`${message.guild.id}.raidlog`, ss.id)
-				message.channel.send(`Le salon ${ss} sera maintenant utilisé pour envoyer les logs de raid`)
-			}
-
-		} else {
-
-		}
+	async execute(interaction, client) {
+		const embed = new EmbedBuilder()
+			.setColor('#8B0000')
+			.setTitle('🛡️ Logs de Raid')
+			.setDescription('Aucun log de raid pour le moment.\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.')
+			.setFooter({ text: client.config.name })
+			.setTimestamp();
+		return interaction.reply({ embeds: [embed] });
 	}
-}
+};

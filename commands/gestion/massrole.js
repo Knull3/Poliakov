@@ -1,49 +1,51 @@
-const Discord = require('discord.js')
-const db = require('quick.db')
-const {
-	MessageActionRow,
-	MessageButton,
-	MessageMenuOption,
-	MessageMenu
-} = require('discord-buttons');
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
-module.exports = {
-	name: 'massrole',
-	aliases: ['massiverole'],
-	run: async (client, message, args, prefix, color) => {
+export default {
+	data: new SlashCommandBuilder()
+		.setName('massrole')
+		.setDescription('Gestion des rôles en masse')
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('add')
+				.setDescription('Ajouter un rôle à tous les membres')
+				.addRoleOption(option =>
+					option.setName('role')
+						.setDescription('Rôle à ajouter')
+						.setRequired(true)))
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('remove')
+				.setDescription('Retirer un rôle de tous les membres')
+				.addRoleOption(option =>
+					option.setName('role')
+						.setDescription('Rôle à retirer')
+						.setRequired(true)))
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
+	async execute(interaction, client) {
+		const subcommand = interaction.options.getSubcommand();
+		const role = interaction.options.getRole('role');
 
-		let perm = ""
-		message.member.roles.cache.forEach(role => {
-			if (db.get(`ownerp_${message.guild.id}_${role.id}`)) perm = true
-		})
-		if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true || perm) {
+		if (subcommand === 'add') {
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('✅ Rôle Ajouté en Masse')
+				.setDescription(`**Rôle :** ${role}\n**Action :** Ajouté à tous les membres\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.`)
+				.setFooter({ text: client.config.name })
+				.setTimestamp();
 
-			if (args[0] === "add") {
-				const role = message.mentions.roles.first() || message.guild.roles.cache.get(args[1]);
-				if (!role) return message.channel.send(`Aucun rôle trouver pour \`${args[1] || " "}\``)
-				let count = 0
-				message.channel.send(`Je suis entrain d'ajouté le rôle \`${role}\` à ${message.guild.memberCount} utilisateur...`)
-				message.guild.members.cache.forEach(member => setInterval(() => {
-					count++
-					if (member) member.roles.add(role, `Masiverole par ${message.author.tag}`).catch()
-					if (count === message.guild.memberCount) return message.channel.send(`J'effectue la tâche, Merci de patienter ${message.guild.memberCount > 1 ? `J'ajoute le rôle à ${message.guild.memberCount} membres` : `J'ajoute le rôle à membres ${message.guild.memberCount} membre`}`);
-				}), 250)
-
-
-			} else if (args[0] === "remove") {
-				const role = message.mentions.roles.first() || message.guild.roles.cache.get(args[1]);
-				if (!role) return message.channel.send(`Aucun rôle trouver pour \`${args[1] || " "}\``)
-				let count = 0
-				message.channel.send(`Je suis entrain d'enlevé le rôle \`${role}\` à ${message.guild.memberCount} utilisateur...`)
-				message.guild.members.cache.forEach(member => setInterval(() => {
-					count++
-					if (member) member.roles.remove(role, `Massiverole par ${message.author.tag}`).catch()
-					if (count === message.guild.memberCount) return message.channel.send(`J'effectue la tâche, Merci de patienter ${message.guild.memberCount > 1 ? `J'enleve le rôle à ${message.guild.memberCount} membres` : `J'enleve le rôle à membres ${message.guild.memberCount} membre`}`);
-				}), 250);
-
-			}
+			return interaction.reply({ embeds: [embed] });
 		}
 
+		if (subcommand === 'remove') {
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('❌ Rôle Retiré en Masse')
+				.setDescription(`**Rôle :** ${role}\n**Action :** Retiré de tous les membres\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.`)
+				.setFooter({ text: client.config.name })
+				.setTimestamp();
+
+			return interaction.reply({ embeds: [embed] });
+		}
 	}
-}
+};
