@@ -2,7 +2,7 @@
 import 'web-streams-polyfill/dist/polyfill.mjs';
 
 import { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder } from 'discord.js';
-import { readdirSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { hasPermission } from './util/permissions.js';
@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Configuration
-const config = JSON.parse(readdirSync('./config.json', 'utf-8'));
+const config = JSON.parse(readFileSync('./config.json', 'utf-8'));
 
 // Client setup
 const client = new Client({
@@ -50,10 +50,14 @@ const loadSlashCommands = async (dir = './commands/') => {
 	
 	for (const commandDir of commandDirs) {
 		const commandPath = join(dir, commandDir);
-		const commandFiles = readdirSync(commandPath).filter(file => file.endsWith('.js'));
+		const commandFiles = readdirSync(commandPath)
+			.filter(file => file.endsWith('.js') && !file.startsWith('!'));
 
 		for (const file of commandFiles) {
-			const filePath = join(commandPath, file);
+			let filePath = join(commandPath, file);
+			// Correction : convertir le chemin en URL compatible ES module
+			if (!filePath.startsWith('./')) filePath = './' + filePath.replace(/\\/g, '/');
+			else filePath = filePath.replace(/\\/g, '/');
 			const command = await import(filePath);
 			
 			if (command.default?.data) {

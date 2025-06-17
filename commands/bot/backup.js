@@ -1,218 +1,203 @@
-const Discord = require('discord.js')
-const db = require('quick.db')
-const {
-	MessageActionRow,
-	MessageButton,
-	MessageMenuOption,
-	MessageMenu
-} = require('discord-buttons');
-const ms = require("ms")
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
 
-function duration(mss) {
-	const sec = Math.floor((mss / 1000) % 60).toString()
-	const min = Math.floor((mss / (1000 * 60)) % 60).toString()
-	const hrs = Math.floor((mss / (1000 * 60 * 60)) % 60).toString()
-	const days = Math.floor(mss / (1000 * 60 * 60 * 24)).toString()
-	return `${days.padStart(2, '') == "0" ? "" : `${days.padStart(2, '')} jours, `}${hrs.padStart(2, '') == "0" ? "" : `${hrs.padStart(2, '')} heures, `}${min.padStart(2, '') == "0" ? "" : `${min.padStart(2, '')} minutes et `}${sec.padStart(2, '')} secondes`
+// Fonction pour gérer les backups d'emojis en JSON
+const BACKUP_PATH = './data/emoji_backups.json';
+
+function getEmojiBackups() {
+	if (!fs.existsSync(BACKUP_PATH)) {
+		fs.writeFileSync(BACKUP_PATH, JSON.stringify({}, null, 2));
+	}
+	return JSON.parse(fs.readFileSync(BACKUP_PATH, 'utf-8'));
 }
-const backup = require("discord-backup")
-backup.setStorageFolder(__dirname + "/backups/");
 
-module.exports = {
-	name: 'backup',
-	aliases: [],
-	run: async (client, message, args, prefix, color) => {
+function saveEmojiBackup(userId, code, serverName, emojis, size) {
+	const backups = getEmojiBackups();
+	if (!backups[userId]) backups[userId] = [];
+	
+	backups[userId].push({
+		code,
+		server: serverName,
+		emojis,
+		size,
+		timestamp: Date.now()
+	});
+	
+	fs.writeFileSync(BACKUP_PATH, JSON.stringify(backups, null, 2));
+}
 
-		if (client.config.owner.includes(message.author.id)) {
-
-			if (args[0] === "emoji" || args[0] === "emojis") {
-				if (args[1].toLowerCase() === "create") {
-					let code = args[2]
-					if (!code) return message.reply(`Merci d'entrer un nom de backup !`)
-					let bruh = `backupemoji_${client.user.id}`;
-					message.channel.send(`Backup en cours...`)
-
-					let emoji = message.guild.emojis.cache;
-
-
-					let arr = new Array();
-					emoji.forEach(e => arr.push(e.toString()));
-					db.push(bruh, {
-						code: code,
-						server: message.guild.name,
-						emojis: arr,
-						size: emoji.size
-					});
-
-					return message.channel.send(`${emoji.size} ${emoji.size?"émojis ont été sauvegardés":"émoji à été sauvegardé"}`);
-				} else if (args[1].toLowerCase() === "delete") {
-					let code = args[2]
-					if (!code) return
-					let pog = db.get(`backupemoji_${client.user.id}`);
-					if (pog) {
-						let data = pog.find(x => x.code === code)
-						if (!data) return
-
-						db.set(`backupemoji_${client.user.id}`, db.get(`backupemoji_${client.user.id}`).filter(s => s.code !== code))
-						message.channel.send(`Backup supprimée`)
-					}
-
-				} else if (args[1].toLowerCase() === "clear") {
-					db.delete(`backupemoji_${client.user.id}`)
-
-					return message.channel.send(`Toute les Backups d'emoji ont était supprimés.`);
-
-				} else if (args[1].toLowerCase() === "load") {
-					let timeout = 2400000;
-					let daily = await db.fetch(`guildbackup_${message.guild.id}`);
-					if (daily != null && daily >= Date.now()) {
-
-
-						message.channel.send(`Une backup à déjà été charger sur le serveur, re essayer dans ${duration(daily - Date.now())} !`)
-					} else {
-						let code = args[2]
-						if (!code) return
-						let pog = db.get(`backupemoji_${client.user.id}`);
-						if (pog) {
-							let data = pog.find(x => x.code === code)
-							if (!data) return
-							if (!data.emojis) return
-							if (!data.size) return
-							message.channel.send(`Chargement de la backup...`)
-
-							data.emojis.forEach(emote => {
-								let emoji = Discord.Util.parseEmoji(emote);
-								if (emoji.id) {
-									const Link = `https://cdn.discordapp.com/emojis/${emoji.id}.${
-                                    emoji.animated ? 'gif' : 'png'
-                                }`;
-									message.guild.emojis
-										.create(`${Link}`, `${`${emoji.name}`}`)
-										.catch(error => {});
-								}
-							});
-
-							db.set(`guildbackup_${message.guild.id}`, Date.now() + 60000 * 40)
-							let guild = message.guild
-
-							message.channel.send(`Backup d'émoji chargée ${data.size ||0}/${data.size ||0}`);
-						}
-					}
-
-
-				} else if (args[1].toLowerCase() === "list") {
-					let p0 = 0;
-					let p1 = 3;
-					let page = 1;
-
-					let bkp = db.get(`backupemoji_${client.user.id}`)
-					if (bkp === null) return message.channel.send("Aucune backup d'émoji trouvé sur le serveur.")
-
-					let embed = new Discord.MessageEmbed()
-
-					embed.setTitle(`Liste des backups d'émoji`)
-						.setColor(color)
-						.setFooter(`1/${Math.ceil(bkp.number === 0?1:bkp.length / 3)} • ${client.config.name}`)
-						.setTimestamp()
-						.setDescription(bkp.map(r => r).map((r, i) => `${r.code}`).slice(0, 3))
-
-					message.channel.send(embed).then(async tdata => {
-						if (bkp.length > 3) {
-							const B1 = new MessageButton()
-								.setLabel("◀")
-								.setStyle("gray")
-								.setID('backuplistemoj1');
-
-							const B2 = new MessageButton()
-								.setLabel("▶")
-								.setStyle("gray")
-								.setID('backuplistemoj2');
-
-							const bts = new MessageActionRow()
-								.addComponent(B1)
-								.addComponent(B2)
-							tdata.edit("", {
-								embed: embed,
-								components: [bts]
-							})
-							setTimeout(() => {
-								tdata.edit("", {
-									components: [],
-									embed: new Discord.MessageEmbed()
-										.setTitle('Backup emoji')
-										.setDescription(bkp
-											.map(r => r)
-											.map((r, i) => `${r.code}`)
-											.slice(0, 3)
-
-										)
-										.setColor(color)
-										.setFooter(`${page}/${Math.ceil(bkp.length === 0?1:bkp.length / 3)} • ${client.config.name}`)
-										.setTimestamp()
-
-								})
-								// message.channel.send(embeds)
-							}, 60000 * 3)
-							client.on("clickButton", (button) => {
-								if (button.clicker.user.id !== message.author.id) return;
-								if (button.id === "backuplistemoj1") {
-									button.reply.defer(true)
-
-									p0 = p0 - 3;
-									p1 = p1 - 3;
-									page = page - 1
-
-									if (p0 < 0) {
-										return
-									}
-									if (p0 === undefined || p1 === undefined) {
-										return
-									}
-
-									embed.setDescription(bkp
-											.map(r => r)
-											.map((r, i) => `${r.code}`)
-											.slice(p0, p1)
-
-										)
-										.setColor(color)
-										.setFooter(`${page}/${Math.ceil(bkp.length === 0?1:bkp.length / 3)} • ${client.config.name}`)
-										.setTimestamp()
-									tdata.edit(embed);
-
-								}
-								if (button.id === "backuplistemoj2") {
-									button.reply.defer(true)
-
-									p0 = p0 + 3;
-									p1 = p1 + 3;
-
-									page++;
-
-									if (p1 > bkp.length + 3) {
-										return
-									}
-									if (p0 === undefined || p1 === undefined) {
-										return
-									}
-
-									embed.setDescription(bkp
-											.map(r => r)
-											.map((r, i) => `${r.code}`)
-											.slice(p0, p1)
-
-										)
-										.setColor(color)
-										.setFooter(`${page}/${Math.ceil(bkp.length === 0?1:bkp.length / 3)} • ${client.config.name}`)
-										.setTimestamp()
-									tdata.edit(embed);
-
-								}
-							})
-						}
-					})
-				}
-			}
-		}
+function deleteEmojiBackup(userId, code) {
+	const backups = getEmojiBackups();
+	if (backups[userId]) {
+		backups[userId] = backups[userId].filter(b => b.code !== code);
+		fs.writeFileSync(BACKUP_PATH, JSON.stringify(backups, null, 2));
 	}
 }
+
+function clearEmojiBackups(userId) {
+	const backups = getEmojiBackups();
+	delete backups[userId];
+	fs.writeFileSync(BACKUP_PATH, JSON.stringify(backups, null, 2));
+}
+
+function getEmojiBackup(userId, code) {
+	const backups = getEmojiBackups();
+	if (backups[userId]) {
+		return backups[userId].find(b => b.code === code);
+	}
+	return null;
+}
+
+function duration(mss) {
+	const sec = Math.floor((mss / 1000) % 60).toString();
+	const min = Math.floor((mss / (1000 * 60)) % 60).toString();
+	const hrs = Math.floor((mss / (1000 * 60 * 60)) % 60).toString();
+	const days = Math.floor(mss / (1000 * 60 * 60 * 24)).toString();
+	return `${days.padStart(2, '') == "0" ? "" : `${days.padStart(2, '')} jours, `}${hrs.padStart(2, '') == "0" ? "" : `${hrs.padStart(2, '')} heures, `}${min.padStart(2, '') == "0" ? "" : `${min.padStart(2, '')} minutes et `}${sec.padStart(2, '')} secondes`;
+}
+
+export default {
+	data: new SlashCommandBuilder()
+		.setName('backup')
+		.setDescription('Gestion des backups d\'emojis')
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('emoji')
+				.setDescription('Gestion des backups d\'emojis')
+				.addStringOption(option =>
+					option.setName('action')
+						.setDescription('Action à effectuer')
+						.setRequired(true)
+						.addChoices(
+							{ name: 'Créer', value: 'create' },
+							{ name: 'Supprimer', value: 'delete' },
+							{ name: 'Vider', value: 'clear' },
+							{ name: 'Charger', value: 'load' },
+							{ name: 'Liste', value: 'list' }
+						))
+				.addStringOption(option =>
+					option.setName('code')
+						.setDescription('Code de la backup')
+						.setRequired(false))),
+
+	async execute(interaction, client) {
+		// Vérifier si l'utilisateur est owner
+		if (!client.config.owner.includes(interaction.user.id)) {
+			const errorEmbed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('❌ Permission refusée')
+				.setDescription('Seuls les propriétaires du bot peuvent utiliser cette commande.')
+				.setTimestamp();
+			
+			return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+		}
+
+		const action = interaction.options.getString('action');
+		const code = interaction.options.getString('code');
+
+		if (action === 'create') {
+			if (!code) {
+				return interaction.reply({ content: '❌ Merci d\'entrer un nom de backup !', ephemeral: true });
+			}
+
+			await interaction.deferReply();
+			
+			const emojis = interaction.guild.emojis.cache;
+			const emojiArray = emojis.map(e => e.toString());
+			
+			saveEmojiBackup(client.user.id, code, interaction.guild.name, emojiArray, emojis.size);
+			
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('✅ Backup créée')
+				.setDescription(`${emojis.size} ${emojis.size > 1 ? 'émojis ont été sauvegardés' : 'émoji a été sauvegardé'} sous le code \`${code}\``)
+				.setTimestamp();
+			
+			return interaction.editReply({ embeds: [embed] });
+
+		} else if (action === 'delete') {
+			if (!code) {
+				return interaction.reply({ content: '❌ Merci d\'entrer un code de backup !', ephemeral: true });
+			}
+
+			const backup = getEmojiBackup(client.user.id, code);
+			if (!backup) {
+				return interaction.reply({ content: '❌ Backup introuvable !', ephemeral: true });
+			}
+
+			deleteEmojiBackup(client.user.id, code);
+			
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('✅ Backup supprimée')
+				.setDescription(`La backup \`${code}\` a été supprimée.`)
+				.setTimestamp();
+			
+			return interaction.reply({ embeds: [embed] });
+
+		} else if (action === 'clear') {
+			clearEmojiBackups(client.user.id);
+			
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('✅ Backups supprimées')
+				.setDescription('Toutes les backups d\'émojis ont été supprimées.')
+				.setTimestamp();
+			
+			return interaction.reply({ embeds: [embed] });
+
+		} else if (action === 'load') {
+			if (!code) {
+				return interaction.reply({ content: '❌ Merci d\'entrer un code de backup !', ephemeral: true });
+			}
+
+			const backup = getEmojiBackup(client.user.id, code);
+			if (!backup) {
+				return interaction.reply({ content: '❌ Backup introuvable !', ephemeral: true });
+			}
+
+			await interaction.deferReply();
+			
+			let successCount = 0;
+			let errorCount = 0;
+
+			for (const emote of backup.emojis) {
+				try {
+					const emoji = client.util.parseEmoji(emote);
+					if (emoji.id) {
+						const link = `https://cdn.discordapp.com/emojis/${emoji.id}.${emoji.animated ? 'gif' : 'png'}`;
+						await interaction.guild.emojis.create(link, emoji.name);
+						successCount++;
+					}
+				} catch (error) {
+					errorCount++;
+				}
+			}
+
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('✅ Backup chargée')
+				.setDescription(`Backup d'émoji chargée : ${successCount}/${backup.size} émojis créés${errorCount > 0 ? ` (${errorCount} erreurs)` : ''}`)
+				.setTimestamp();
+			
+			return interaction.editReply({ embeds: [embed] });
+
+		} else if (action === 'list') {
+			const backups = getEmojiBackups()[client.user.id] || [];
+			
+			if (backups.length === 0) {
+				return interaction.reply({ content: '❌ Aucune backup d\'émoji trouvée.', ephemeral: true });
+			}
+
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('📋 Liste des backups d\'émojis')
+				.setDescription(backups.map(b => `\`${b.code}\` - ${b.server} (${b.size} émojis)`).join('\n'))
+				.setFooter({ text: `${client.config.name} • ${backups.length} backup(s)` })
+				.setTimestamp();
+			
+			return interaction.reply({ embeds: [embed] });
+		}
+	}
+};

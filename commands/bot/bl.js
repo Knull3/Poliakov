@@ -1,195 +1,168 @@
-const Discord = require('discord.js')
-const db = require('quick.db')
-const {
-    MessageActionRow,
-    MessageButton,
-    MessageMenuOption,
-    MessageMenu
-} = require('discord-buttons');
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import fs from 'fs';
 
+// Fonction pour gérer la blacklist en JSON
+const BLACKLIST_PATH = './data/blacklist.json';
 
-module.exports = {
-    name: 'blacklist',
-    aliases: ["bl"],
-    run: async (client, message, args, prefix, color) => {
-
-        if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true) {
-
-            if (args[0] === "add") {
-                let member = client.users.cache.get(message.author.id);
-                if (args[1]) {
-                    member = client.users.cache.get(args[1]);
-                } else {
-                    if (!user) return message.channel.send(`Aucun membre trouvé pour \`${args[1] || "rien"}\``)
-                }
-                if (message.mentions.members.first()) {
-                    member = client.users.cache.get(message.mentions.members.first().id);
-                }
-                if (!member) return message.channel.send(`Aucun membre trouvé pour \`${args[1]|| " "}\``)
-                if (db.get(`blmd_${client.user.id}_${member.id}`) === true) {
-                    return message.channel.send(`<@${member.id}> est déjà dans la blacklist`)
-                }
-                let nmb = 0
-                let nmbe = 0
-                client.guilds.cache.forEach(g => {
-                    if(g.members.cache.get(member.id)) {
-                        g.members.cache.get(member.id).ban().then(() => {nmb=nmb+1}).catch(err => {nmbe=nmbe+1})
-                     
-                    }
-                });
-                db.set(`blmd_${client.user.id}_${member.id}`, true)
-
-                message.channel.send(`**${member.username}** à été ajouté à la blacklist.\nIl a été **ban** de **${client.guilds.cache.size}** serveur(s)\nJe n'ai pas pu le **ban** de 0 serveur
-                `)
-            } else if (args[0] === "clear") {
-                let tt = await db.all().filter(data => data.ID.startsWith(`blmd_${client.user.id}`));
-                message.channel.send(`${tt.length === undefined||null ? 0:tt.length} ${tt.length > 1 ? "personnes ont été supprimées ":"personne a été supprimée"} de la blacklist`)
-
-
-                let ttt = 0;
-                for (let i = 0; i < tt.length; i++) {
-                    db.delete(tt[i].ID);
-                    ttt++;
-                }
-            } else if (args[0] === "remove") {
-
-                if (args[1]) {
-                    let member = client.users.cache.get(message.author.id);
-                    if (args[1]) {
-                        member = client.users.cache.get(args[1]);
-                    } else {
-                        return message.channel.send(`Aucun membre trouvé pour \`${args[1]|| " "}\``)
-
-                    }
-                    if (message.mentions.members.first()) {
-                        member = client.users.cache.get(message.mentions.members.first().id);
-                    }
-                    if (!member) return message.channel.send(`Aucun membre trouvé pour \`${args[1]|| " "}\``)
-                    if (db.get(`blmd_${client.user.id}_${member.id}`) === null) {
-                        return message.channel.send(`<@${member.id}> n'est pas dans la blacklist`)
-                    }
-                    db.delete(`blmd_${client.user.id}_${member.id}`)
-                    message.channel.send(`<@${member.id}> n'est plus dans la blacklist`)
-                }
-            } else if (args[0] === "list") {
-
-
-                let money = db.all().filter(data => data.ID.startsWith(`blmd_${client.user.id}`)).sort((a, b) => b.data - a.data)
-
-                let p0 = 0;
-                let p1 = 3;
-                let page = 1;
-
-                const embed = new Discord.MessageEmbed()
-                    .setTitle('Blacklist')
-                    .setDescription(money
-                        .filter(x => client.users.cache.get(x.ID.split('_')[2]))
-                        .map((m, i) => `${i + 1}) <@${client.users.cache.get(m.ID.split('_')[2]).id}> (${client.users.cache.get(m.ID.split('_')[2]).id})`)
-                        .slice(0, 3)
-
-                    )
-                    .setFooter(`${page}/${Math.ceil(money.length === 0?1:money.length / 3)} • ${client.config.name}`)
-                    .setColor(color)
-
-
-                message.channel.send(embed).then(async tdata => {
-                    if (money.length > 3) {
-                        const B1 = new MessageButton()
-                            .setLabel("◀")
-                            .setStyle("gray")
-                            .setID('bl1');
-
-                        const B2 = new MessageButton()
-                            .setLabel("▶")
-                            .setStyle("gray")
-                            .setID('bl2');
-
-                        const bts = new MessageActionRow()
-                            .addComponent(B1)
-                            .addComponent(B2)
-                        tdata.edit("", {
-                            embed: embed,
-                            components: [bts]
-                        })
-                        setTimeout(() => {
-                            tdata.edit("", {
-                                components: [],
-                                embed: new Discord.MessageEmbed()
-                                    .setTitle('Blacklist')
-                                    .setDescription(money
-                                        .filter(x => client.users.cache.get(x.ID.split('_')[2]))
-                                        .map((m, i) => `${i + 1}) <@${client.users.cache.get(m.ID.split('_')[2]).id}> (${client.users.cache.get(m.ID.split('_')[2]).id})`)
-                                        .slice(0, 3)
-
-                                    )
-                                    .setFooter(`1/${Math.ceil(money.length === 0?1:money.length / 3)} • ${client.config.name}`)
-                                    .setColor(color)
-
-
-                            })
-                            // message.channel.send(embeds)
-                        }, 60000 * 3)
-                        client.on("clickButton", (button) => {
-                            if (button.clicker.user.id !== message.author.id) return;
-                            if (button.id === "bl1") {
-                                button.reply.defer(true)
-
-                                p0 = p0 - 3;
-                                p1 = p1 - 3;
-                                page = page - 1
-
-                                if (p0 < 0) {
-                                    return
-                                }
-                                if (p0 === undefined || p1 === undefined) {
-                                    return
-                                }
-
-
-                                embed.setDescription(money
-                                        .filter(x => client.users.cache.get(x.ID.split('_')[2]))
-                                        .map((m, i) => `${i + 1}) <@${client.users.cache.get(m.ID.split('_')[2]).id}> (${client.users.cache.get(m.ID.split('_')[2]).id})`)
-                                        .slice(p0, p1)
-
-                                    )
-                                    .setFooter(`${page}/${Math.ceil(money.length === 0?1:money.length / 3)} • ${client.config.name}`)
-                                tdata.edit(embed);
-
-                            }
-                            if (button.id === "bl2") {
-                                button.reply.defer(true)
-
-                                p0 = p0 + 3;
-                                p1 = p1 + 3;
-
-                                page++;
-
-                                if (p1 > money.length + 3) {
-                                    return
-                                }
-                                if (p0 === undefined || p1 === undefined) {
-                                    return
-                                }
-
-
-                                embed.setDescription(money
-                                        .filter(x => client.users.cache.get(x.ID.split('_')[2]))
-                                        .map((m, i) => `${i + 1}) <@${client.users.cache.get(m.ID.split('_')[2]).id}> (${client.users.cache.get(m.ID.split('_')[2]).id})`)
-                                        .slice(p0, p1)
-
-                                    )
-                                    .setFooter(`${page}/${Math.ceil(money.length === 0?1:money.length / 3)} • ${client.config.name}`)
-                                tdata.edit(embed);
-
-                            }
-                        })
-                    }
-
-                })
-
-            }
-        }
-
-
-    }
+function getBlacklist() {
+  if (!fs.existsSync(BLACKLIST_PATH)) {
+    fs.writeFileSync(BLACKLIST_PATH, JSON.stringify({}, null, 2));
+  }
+  return JSON.parse(fs.readFileSync(BLACKLIST_PATH, 'utf-8'));
 }
+
+function addToBlacklist(botId, userId) {
+  const blacklist = getBlacklist();
+  if (!blacklist[botId]) blacklist[botId] = [];
+  if (!blacklist[botId].includes(userId)) {
+    blacklist[botId].push(userId);
+    fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(blacklist, null, 2));
+  }
+}
+
+function removeFromBlacklist(botId, userId) {
+  const blacklist = getBlacklist();
+  if (blacklist[botId]) {
+    blacklist[botId] = blacklist[botId].filter(id => id !== userId);
+    fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(blacklist, null, 2));
+  }
+}
+
+function clearBlacklist(botId) {
+  const blacklist = getBlacklist();
+  delete blacklist[botId];
+  fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(blacklist, null, 2));
+}
+
+function isBlacklisted(botId, userId) {
+  const blacklist = getBlacklist();
+  return blacklist[botId] && blacklist[botId].includes(userId);
+}
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('blacklist')
+    .setDescription('Gestion de la blacklist')
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('add')
+        .setDescription('Ajouter un utilisateur à la blacklist')
+        .addUserOption(option =>
+          option.setName('user')
+            .setDescription('Utilisateur à blacklister')
+            .setRequired(true)))
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('remove')
+        .setDescription('Retirer un utilisateur de la blacklist')
+        .addUserOption(option =>
+          option.setName('user')
+            .setDescription('Utilisateur à retirer')
+            .setRequired(true)))
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('clear')
+        .setDescription('Vider toute la blacklist'))
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('list')
+        .setDescription('Voir la liste des utilisateurs blacklistés')),
+
+  async execute(interaction, client) {
+    // Vérifier les permissions
+    if (!client.config.owner.includes(interaction.user.id)) {
+      const errorEmbed = new EmbedBuilder()
+        .setColor('#8B0000')
+        .setTitle('❌ Permission refusée')
+        .setDescription('Seuls les propriétaires du bot peuvent utiliser cette commande.')
+        .setTimestamp();
+      
+      return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    }
+
+    const subcommand = interaction.options.getSubcommand();
+    const user = interaction.options.getUser('user');
+
+    if (subcommand === 'add') {
+      if (isBlacklisted(client.user.id, user.id)) {
+        return interaction.reply({ content: `❌ <@${user.id}> est déjà dans la blacklist`, ephemeral: true });
+      }
+
+      await interaction.deferReply();
+
+      let banCount = 0;
+      let errorCount = 0;
+
+      // Bannir de tous les serveurs
+      for (const guild of client.guilds.cache.values()) {
+        try {
+          const member = await guild.members.fetch(user.id);
+          if (member && member.bannable) {
+            await member.ban({ reason: 'Blacklist' });
+            banCount++;
+          }
+        } catch (error) {
+          errorCount++;
+        }
+      }
+
+      addToBlacklist(client.user.id, user.id);
+
+      const embed = new EmbedBuilder()
+        .setColor('#8B0000')
+        .setTitle('✅ Utilisateur blacklisté')
+        .setDescription(`**${user.username}** a été ajouté à la blacklist.\nIl a été banni de **${banCount}** serveur(s)${errorCount > 0 ? `\nImpossible de bannir de **${errorCount}** serveur(s)` : ''}`)
+        .setTimestamp();
+
+      return interaction.editReply({ embeds: [embed] });
+
+    } else if (subcommand === 'remove') {
+      if (!isBlacklisted(client.user.id, user.id)) {
+        return interaction.reply({ content: `❌ <@${user.id}> n'est pas dans la blacklist`, ephemeral: true });
+      }
+
+      removeFromBlacklist(client.user.id, user.id);
+
+      const embed = new EmbedBuilder()
+        .setColor('#8B0000')
+        .setTitle('✅ Utilisateur retiré')
+        .setDescription(`<@${user.id}> n'est plus dans la blacklist.`)
+        .setTimestamp();
+
+      return interaction.reply({ embeds: [embed] });
+
+    } else if (subcommand === 'clear') {
+      const blacklist = getBlacklist()[client.user.id] || [];
+      const count = blacklist.length;
+      
+      clearBlacklist(client.user.id);
+
+      const embed = new EmbedBuilder()
+        .setColor('#8B0000')
+        .setTitle('✅ Blacklist vidée')
+        .setDescription(`${count} ${count > 1 ? 'personnes ont été supprimées' : 'personne a été supprimée'} de la blacklist.`)
+        .setTimestamp();
+
+      return interaction.reply({ embeds: [embed] });
+
+    } else if (subcommand === 'list') {
+      const blacklist = getBlacklist()[client.user.id] || [];
+      
+      if (blacklist.length === 0) {
+        return interaction.reply({ content: '❌ Aucun utilisateur dans la blacklist.', ephemeral: true });
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor('#8B0000')
+        .setTitle('📋 Liste de la blacklist')
+        .setDescription(blacklist.map((userId, index) => {
+          const user = client.users.cache.get(userId);
+          return `${index + 1}) <@${userId}> (${user ? user.username : 'Utilisateur inconnu'})`;
+        }).join('\n'))
+        .setFooter({ text: `${client.config.name} • ${blacklist.length} utilisateur(s)` })
+        .setTimestamp();
+
+      return interaction.reply({ embeds: [embed] });
+    }
+  }
+};
