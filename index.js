@@ -6,6 +6,14 @@ const { readdirSync, readFileSync } = require('fs');
 const path = require('path');
 const { hasPermission } = require('./util/permissions.js');
 
+// Liste des fichiers à ignorer
+const IGNORED_FILES = [
+	'events/rolemenu/clickButton.js',
+	'util/embedButton/start.js',
+	'commands/utilitaire/banner.js',
+	'commands/utilitaire/snipe.js'
+];
+
 // Configuration
 const config = JSON.parse(readFileSync('./config.json', 'utf-8'));
 
@@ -40,6 +48,11 @@ process.on('unhandledRejection', err => {
 	console.error('Uncaught Promise Error:', err);
 });
 
+// Helper function to check if a file should be ignored
+function shouldIgnoreFile(filePath) {
+	return IGNORED_FILES.some(ignoredPath => filePath.includes(ignoredPath));
+}
+
 // Load slash commands
 const loadSlashCommands = async (dir = './commands/') => {
 	const commandDirs = readdirSync(dir);
@@ -52,6 +65,13 @@ const loadSlashCommands = async (dir = './commands/') => {
 		for (const file of commandFiles) {
 			// Construire le chemin complet pour require
 			const filePath = `./${path.join(commandPath, file)}`.replace(/\\/g, '/');
+            
+            // Ignorer les fichiers problématiques
+            if (shouldIgnoreFile(filePath)) {
+                console.log(`⚠️ Fichier ignoré: ${filePath}`);
+                continue;
+            }
+
 			// Utiliser require avec le chemin relatif
 			try {
 				const command = require(filePath);
@@ -82,6 +102,13 @@ const loadEvents = async (dir = './events/') => {
 		for (const file of eventFiles) {
 			// Construire le chemin complet pour require
 			const filePath = `./${path.join(eventPath, file)}`.replace(/\\/g, '/');
+
+            // Ignorer les fichiers problématiques
+            if (shouldIgnoreFile(filePath)) {
+                console.log(`⚠️ Fichier ignoré: ${filePath}`);
+                continue;
+            }
+
 			try {
 				const event = require(filePath);
 				const eventName = file.split('.')[0];
