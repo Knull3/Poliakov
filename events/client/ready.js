@@ -1,5 +1,6 @@
 const Discord = require("discord.js");
-const disbut = require("discord-buttons")
+// Désactivé car incompatible avec discord.js v14
+// const disbut = require("discord-buttons")
 const db = require("quick.db")
 
 module.exports = (client) => {

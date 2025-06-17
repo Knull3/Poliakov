@@ -1,5 +1,6 @@
 const Discord = require("discord.js");
-const disbut = require("discord-buttons")
+// Désactivé car incompatible avec discord.js v14
+// const disbut = require("discord-buttons")
 const db = require("quick.db")
 
 module.exports = (client) => {
@@ -10,8 +11,8 @@ module.exports = (client) => {
 			let vocalformat = db.fetch(`vocalformat_${guild.id}`)
 			let boostformat = db.fetch(`boostformat_${guild.id}`)
 			if (memberformat == null) memberformat = `💎・Membres: ${guild.memberCount}`
-			if (onlineformat == null) onlineformat = `🌟・En ligne: ${guild.members.cache.filter(m => m.user.presence.status !== 'offline').size}`
-			if (vocalformat == null) vocalformat = `🎧・En vocal: ${guild.members.cache.filter(m => m.voice.channel).size}`
+			if (onlineformat == null) onlineformat = `🌟・En ligne: ${guild.members.cache.filter(m => m.user.presence?.status !== 'offline').size}`
+			if (vocalformat == null) vocalformat = `🎧・En vocal: ${guild.members.cache.filter(m => m.voice?.channel).size}`
 			if (boostformat == null) boostformat = `🔮・Boost: ${guild.premiumSubscriptionCount}`
 
 			let memberchannel = guild.channels.cache.get(db.fetch(`member_${guild.id}`))
@@ -24,13 +25,13 @@ module.exports = (client) => {
 			if (!onlinechannel) {
 				return;
 			} else {
-				onlinechannel.setName(onlineformat.replace("<count>", guild.members.cache.filter(m => m.user.presence.status !== 'offline').size))
+				onlinechannel.setName(onlineformat.replace("<count>", guild.members.cache.filter(m => m.user.presence?.status !== 'offline').size))
 			}
 			let vocalchannel = guild.channels.cache.get(db.fetch(`vocal_${guild.id}`))
 			if (!vocalchannel) {
 				return;
 			} else {
-				vocalchannel.setName(vocalformat.replace("<count>", guild.members.cache.filter(m => m.voice.channel).size))
+				vocalchannel.setName(vocalformat.replace("<count>", guild.members.cache.filter(m => m.voice?.channel).size))
 			}
 			let boostchannel = guild.channels.cache.get(db.fetch(`boost_${guild.id}`))
 			if (!boostchannel) {
