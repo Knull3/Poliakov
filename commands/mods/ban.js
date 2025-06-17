@@ -1,290 +1,106 @@
-const Discord = require("discord.js"),
-	{
-		MessageEmbed
-	} = require("discord.js"),
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js')
 
-	ms = require("ms"),
-	cooldown = {}
-const db = require("quick.db")
-
-function bantime(message, user, time, authorcooldown) {
-	message.guild.members.ban(user.id, {
-		reason: `Bannis par ${message.author.tag} pour: Sans raison`,
-		days: 7
-	}).then(r => {
-		authorcooldown.limit++
-		setTimeout(() => {
-			message.guild.members.unban(user.id)
-		}, time);
-		setTimeout(() => {
-			authorcooldown.limit = authorcooldown.limit - 1
-		}, 120000);
-	})
-};
-
-function bantimereason(message, user, time, authorcooldown, reason) {
-	message.guild.members.ban(user.id, {
-		reason: `Bannis par ${message.author.tag} pour: ${reason}`,
-		days: 7
-	}).then(r => {
-		authorcooldown.limit++
-		setTimeout(() => {
-			message.guild.members.unban(user.id)
-		}, time);
-		setTimeout(() => {
-			authorcooldown.limit = authorcooldown.limit - 1
-		}, 120000);
-	})
-};
-
-function ban(message, user, authorcooldown) {
-	message.guild.members.ban(user.id, {
-		reason: `Bannis par ${message.author.tag} pour: Sans raison`,
-		days: 7
-	}).then(r => {
-		authorcooldown.limit++
-		setTimeout(() => {
-			authorcooldown.limit = authorcooldown.limit - 1
-		}, 120000);
-	})
-};
-
-function banreason(message, user, authorcooldown, reason) {
-	message.guild.members.ban(user.id, {
-		reason: `Bannis par ${message.author.tag} pour: ${reason}`,
-		days: 7
-	}).then(r => {
-		authorcooldown.limit++
-		setTimeout(() => {
-			authorcooldown.limit = authorcooldown.limit - 1
-		}, 120000);
-	})
-}
 module.exports = {
-	name: 'ban',
-	aliases: ["setban"],
-	run: async (client, message, args, prefix, color) => {
-
-
+	data: new SlashCommandBuilder()
+		.setName('ban')
+		.setDescription('Bannit un membre du serveur')
+		.addUserOption(option =>
+			option.setName('membre')
+				.setDescription('Le membre à bannir')
+				.setRequired(true))
+		.addStringOption(option =>
+			option.setName('raison')
+				.setDescription('La raison du bannissement')
+				.setRequired(false))
+		.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+	
+	async execute(interaction, client) {
+		const member = interaction.member
+		const guild = interaction.guild
+		const channel = interaction.channel
+		const targetUser = interaction.options.getUser('membre')
+		const reason = interaction.options.getString('raison') || 'Aucune raison spécifiée'
+		
+		// Vérification des permissions
 		let perm = ""
-		message.member.roles.cache.forEach(role => {
-			if (db.get(`admin_${message.guild.id}_${role.id}`)) perm = true
-			if (db.get(`ownerp_${message.guild.id}_${role.id}`)) perm = true
+		member.roles.cache.forEach(role => {
+			if (client.db?.get(`modsp_${guild.id}_${role.id}`)) perm = true
+			if (client.db?.get(`ownerp_${guild.id}_${role.id}`)) perm = true
+			if (client.db?.get(`admin_${guild.id}_${role.id}`)) perm = true
 		})
-		if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true || perm) {
-
-			if (args[0]) {
-				let chx = db.get(`logmod_${message.guild.id}`);
-				const logsmod = message.guild.channels.cache.get(chx)
-				if (!cooldown[message.author.id]) cooldown[message.author.id] = {
-					limit: 0
-				}
-				var authorcooldown = cooldown[message.author.id]
-				if (authorcooldown.limit > 2) return message.channel.send(`Vous avez atteint votre limite de **bannisement**, veuillez retenter plus tard!`);
-
-				//var user = message.mentions.users.first() || client.users.cache.get(args[0])
-				var user = message.mentions.members.first() || message.guild.members.cache.get(args[0])
-				if (!user) return message.channel.send(`Aucun membre trouvé pour \`${args[0] || "rien"}\``)
-                if (user.id === message.author.id) {
-                    return message.channel.send(`Vous n'avez pas la permission de **ban** *(vous ne pouvez pas vous ban vous même)* <@${user.id}>`);
-                }
-                if (user.roles.highest.position > client.user.id) return message.channel.send(`Je n'ai pas les permissions nécessaires pour **ban** <@${user.id}>`);
-                if (db.get(`ownermd_${message.author.id}`) === true) return message.channel.send(`Vous n'avez pas la permission de **ban** <@${user.id}>`);
-                if (client.config.owner.includes(user.id)) return message.channel.send(`Vous n'avez pas la permission de **ban** *(vous ne pouvez pas ban un owner)* <@${user.id}>`);
-				if (args[1]) {
-					var time = ms(args[1].replace("j", "d"))
-					if (time) {
-						var reason = args.slice(2).join(" ")
-						if (reason) {
-							message.channel.send(`${user} à été **ban ${args[1]}** pour \`${reason}\``);
-							bantimereason(message, user, time, authorcooldown, reason)
-							user.send(`Vous avez été **ban** de **${message.guild.name}** pour \`${reason}\``)
-
-							if (logsmod) logsmod.send(
-								new Discord.MessageEmbed()
-								//.setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-								.setColor(color)
-								//.setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-								//.setTimestamp() 
-								//  .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Pendant**: \`${args[1]}\`\n**Pour** \`${reason}\`\n**Temps de réponse**: ${client.ws.ping}ms`)
-								.setDescription(`${message.author} a **ban ${args[1]}** ${user} pour \`${reason}\``)
-
-
-							)
-						} else {
-							message.channel.send(`${message.mentions.members.first().user} a été **ban ${args[1]}**`);
-							bantime(message, user, time, authorcooldown)
-							user.send(`Vous avez été **ban ${args[1]}** de **${message.guild.name}**`)
-
-							if (logsmod) logsmod.send(
-								new Discord.MessageEmbed()
-								// .setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-								.setColor(color)
-								// .setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-								//.setTimestamp() 
-								//.setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Pendant**: \`${args[1]}\`\n**Temps de réponse**: ${client.ws.ping}ms`)
-								.setDescription(`${message.author} a **ban ${args[1]}** ${user}`)
-
-
-
-							)
-						}
-
-						// -- 
-					} else {
-
-						var reason = args.slice(1).join(" ")
-						if (reason) {
-							message.channel.send(`${user} a été **ban** pour \`${reason}\``);
-							banreason(message, user, authorcooldown, reason)
-							user.send(`Vous avez été **ban** de **${message.guild.name}** pour \`${reason}\``)
-
-							if (logsmod) logsmod.send(
-								new Discord.MessageEmbed()
-								// .setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-								.setColor(color)
-								//.setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-								//      .setTimestamp() 
-								//     .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Pour** \`${reason}\`\n**Temps de réponse**: ${client.ws.ping}ms`)
-								.setDescription(`${message.author} a **ban** ${user} pour \`${reason}\``)
-
-
-
-							)
-						} else {
-							message.channel.send(`${user} a été **ban**`);
-							ban(message, user, authorcooldown)
-							user.send(`Vous avez été **ban** de **${message.guild.name}**`)
-
-							if (logsmod) logsmod.send(
-								new Discord.MessageEmbed()
-								//       .setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-								.setColor(color)
-								//   .setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-								//     .setTimestamp() 
-								//    .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Temps de réponse**: ${client.ws.ping}ms`)
-								.setDescription(`${message.author} a **ban** ${user}`)
-
-
-
-							)
-						}
-					}
-				} else {
-					message.channel.send(`${user} a été **ban**`);
-					ban(message, user, authorcooldown)
-					user.send(`Vous avez été **ban** de **${message.guild.name}**`)
-
-					if (logsmod) logsmod.send(
-						new Discord.MessageEmbed()
-						//        .setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-						.setColor(color)
-						//      .setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-						//    .setTimestamp() 
-						//   .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Temps de réponse**: ${client.ws.ping}ms`)
-						.setDescription(`${message.author} a **ban** ${user}`)
-
-
-
-					)
-				}
-			} else {
-				user = await client.users.fetch(args[0])
-				if (user) {
-					if (args[1]) {
-						var time = ms(args[1])
-						if (time) {
-							var reason = args.slice(2).join(" ")
-							if (reason) {
-								message.channel.send(`${user} a été **ban ${args[1]}** pour \`${reason}\``);
-								user.send(`Vous avez été **ban** de **${message.guild.name}** pour \`${reason}\``)
-								bantimereason(message, user, time, authorcooldown, reason)
-								if (logsmod) logsmod.send(
-									new Discord.MessageEmbed()
-									//  .setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-									.setColor(color)
-									//              .setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-									//           .setTimestamp() 
-									//         .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Pendant**: \`${args[1]}\`\n**Pour** \`${reason}\`\n**Temps de réponse**: ${client.ws.ping}ms`)
-									.setDescription(`${message.author} a **ban ${args[1]}** ${user} pour \`${reason}\``)
-
-
-								)
-							} else {
-								message.channel.send(`${user} a été **ban ${args[1]}** `);
-								user.send(`Vous avez été **ban** de **${message.guild.name}**`)
-								bantime(message, user, time, authorcooldown)
-								if (logsmod) logsmod.send(
-									new Discord.MessageEmbed()
-									//.setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-									//  .setColor(color)
-									//        .setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-									//      .setTimestamp() 
-									//     .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Pendant**: \`${args[1]}\`\n**Temps de réponse**: ${client.ws.ping}ms`)
-									.setDescription(`${message.author} a **ban ${args[1]}** ${user}`)
-
-
-								)
-							}
-
-							// -- 
-						} else {
-
-							var reason = args.slice(1).join(" ")
-							if (reason) {
-								message.channel.send(`${user} à été **ban** pour \`${reason}\``);
-								user.send(`Vous avez été **ban** de **${message.guild.name}** pour \`${reason}\``)
-								banreason(message, user, authorcooldown, reason)
-								if (logsmod) logsmod.send(
-									new Discord.MessageEmbed()
-									//             .setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-									.setColor(color)
-									//           .setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-									//         .setTimestamp() 
-									//        .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Pour** \`${reason}\`\n**Temps de réponse**: ${client.ws.ping}ms`)
-									.setDescription(`${message.author} a **ban** ${user} pour \`${reason}\``)
-
-
-								)
-							} else {
-								message.channel.send(`${user} à été **ban**`);
-								user.send(`Vous avez été **ban** de **${message.guild.name}**`)
-								ban(message, user, authorcooldown)
-								if (logsmod) logsmod.send(
-									new Discord.MessageEmbed()
-									//           .setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-									//         .setColor(color)
-									//       .setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-									//   .setTimestamp() 
-									//      .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Temps de réponse**: ${client.ws.ping}ms`)
-									.setDescription(`${message.author} a **ban** ${user}`)
-
-
-								)
-							}
-						}
-					} else {
-						message.channel.send(`${user} à été **ban**`);
-						user.send(`Vous avez été **ban** de **${message.guild.name}**`)
-						ban(message, user, authorcooldown)
-						if (logsmod) logsmod.send(
-							new Discord.MessageEmbed()
-							// .setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-							.setColor(color)
-							//        .setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-							//      .setTimestamp() 
-							//     .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Temps de réponse**: ${client.ws.ping}ms`)
-							.setDescription(`${message.author} a **ban** ${user}`)
-
-
-						)
-					}
-				}
-			}
-
-
-
-
+		
+		const hasAccess = client.config.owner.includes(member.id) || 
+						 client.db?.get(`ownermd_${client.user.id}_${member.id}`) === true || 
+						 perm || 
+						 client.db?.get(`channelpublic_${guild.id}_${channel.id}`) === true
+		
+		if (!hasAccess) {
+			const errorEmbed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('Permission refusée')
+				.setDescription('Vous n\'avez pas la permission d\'utiliser cette commande.')
+				.setTimestamp()
+			
+			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
+		}
+		
+		// Vérifier si l'utilisateur peut être banni
+		const targetMember = await guild.members.fetch(targetUser.id).catch(() => null)
+		
+		if (!targetMember) {
+			const errorEmbed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('Erreur')
+				.setDescription('Cet utilisateur n\'est pas membre de ce serveur.')
+				.setTimestamp()
+			
+			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
+		}
+		
+		if (!targetMember.bannable) {
+			const errorEmbed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('Erreur')
+				.setDescription('Je ne peux pas bannir cet utilisateur.')
+				.setTimestamp()
+			
+			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
+		}
+		
+		if (targetMember.id === member.id) {
+			const errorEmbed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('Erreur')
+				.setDescription('Vous ne pouvez pas vous bannir vous-même.')
+				.setTimestamp()
+			
+			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
+		}
+		
+		try {
+			await targetMember.ban({ reason: `${reason} - Banni par ${member.user.tag}` })
+			
+			const embed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('🔨 Membre banni')
+				.setDescription(`**${targetUser.tag}** a été banni du serveur.`)
+				.addFields(
+					{ name: 'Raison', value: reason, inline: true },
+					{ name: 'Banni par', value: member.user.tag, inline: true }
+				)
+				.setTimestamp()
+			
+			await interaction.reply({ embeds: [embed] })
+			
+		} catch (error) {
+			console.error('Erreur lors du bannissement:', error)
+			const errorEmbed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('Erreur')
+				.setDescription('Une erreur est survenue lors du bannissement.')
+				.setTimestamp()
+			
+			await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
 		}
 	}
 }

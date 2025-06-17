@@ -1,5 +1,5 @@
 {
-    "color": "#6495ED",
+    "color": "#8B0000",
     "prefix": "+",
     "name": "Poliakov",
     "defaultjoinmessage": "{user} vient de rejoindre. Il a été invité par **{inviter:name}** qui a désormais **{invite} invitations** !",
