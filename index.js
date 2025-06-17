@@ -171,9 +171,9 @@ const startBot = async () => {
 		await loadEvents();
 		
 		// Login
-		const token = process.env.TOKEN || config.token;
+		const token = process.env.token;
 		if (!token) {
-			console.error('❌ Token manquant. Ajoutez votre token dans config.json ou dans les variables d\'environnement.');
+			console.error('❌ Token manquant. Ajoutez votre token dans les variables d\'environnement (process.env.token).');
 			return;
 		}
 		

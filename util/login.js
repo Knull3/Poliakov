@@ -1,13 +1,15 @@
-import { readdirSync } from 'fs';
-import Discord from 'discord.js';
-import logs from 'discord-logs';
-import disbut from 'discord-buttons';
-import tempo from './gestion/tempo.js';
-import config from '../config.json' assert { type: 'json' };
+const { readdirSync } = require('fs');
+const Discord = require('discord.js');
+const logs = require('discord-logs');
+// Désactivé car incompatible avec discord.js v14
+// const disbut = require('discord-buttons');
+const tempo = require('./gestion/tempo.js');
+const config = require('../config.json');
 
 const login = (client) => {
     logs(client);
-    disbut(client);
+    // Désactivé car incompatible avec discord.js v14
+    // disbut(client);
     tempo(client);
 
     client.config = config;
@@ -23,4 +25,4 @@ const login = (client) => {
     client.login(process.env.token);
 };
 
-export { login };
+module.exports = { login };
