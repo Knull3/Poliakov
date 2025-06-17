@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require("discord.js");
 
-export default {
+module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('derank')
 		.setDescription('Retirer tous les rôles d\'un utilisateur')

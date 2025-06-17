@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import fs from 'fs';
-import path from 'path';
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
 
 // Fonction pour gérer les backups d'emojis en JSON
 const BACKUP_PATH = './data/emoji_backups.json';
@@ -57,7 +57,7 @@ function duration(mss) {
 	return `${days.padStart(2, '') == "0" ? "" : `${days.padStart(2, '')} jours, `}${hrs.padStart(2, '') == "0" ? "" : `${hrs.padStart(2, '')} heures, `}${min.padStart(2, '') == "0" ? "" : `${min.padStart(2, '')} minutes et `}${sec.padStart(2, '')} secondes`;
 }
 
-export default {
+module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('backup')
 		.setDescription('Gestion des backups d\'emojis')
@@ -198,6 +198,6 @@ export default {
 				.setTimestamp();
 			
 			return interaction.reply({ embeds: [embed] });
-								}
+		}
 	}
 };

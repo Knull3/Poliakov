@@ -1,5 +1,5 @@
-import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import fs from 'fs';
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const fs = require('fs');
 
 // Fonction pour gérer la configuration en JSON
 const CONFIG_PATH = './data/bot_config.json';
@@ -44,7 +44,7 @@ const activity = {
     'WATCHING': 'Regarde',
 };
 
-export default {
+module.exports = {
   data: new SlashCommandBuilder()
     .setName('botconfig')
     .setDescription('Configuration du bot'),

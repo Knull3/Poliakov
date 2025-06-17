@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
-export default {
+module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('botinfo')
 		.setDescription('Affiche les informations du bot'),

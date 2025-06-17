@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 
-export default {
+module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('logs')
 		.setDescription('Configuration des logs')

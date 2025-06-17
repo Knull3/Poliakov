@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 
-export default {
+module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('allbotadmin')
 		.setDescription('Lister tous les bots administrateurs du serveur')

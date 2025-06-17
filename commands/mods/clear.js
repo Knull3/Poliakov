@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js'
+const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js")
 
-export default {
+module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('clear')
 		.setDescription('Supprimer un nombre de messages')

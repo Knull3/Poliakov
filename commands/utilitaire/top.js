@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
-export default {
+module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('top')
 		.setDescription('Afficher le classement du serveur'),

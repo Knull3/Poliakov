@@ -1,5 +1,5 @@
-import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import fs from 'fs';
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const fs = require('fs');
 
 // Fonction pour gérer la blacklist en JSON
 const BLACKLIST_PATH = './data/blacklist.json';
@@ -39,7 +39,7 @@ function isBlacklisted(botId, userId) {
   return blacklist[botId] && blacklist[botId].includes(userId);
 }
 
-export default {
+module.exports = {
   data: new SlashCommandBuilder()
     .setName('blacklist')
     .setDescription('Gestion de la blacklist')

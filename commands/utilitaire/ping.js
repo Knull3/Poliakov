@@ -1,7 +1,7 @@
-import { SlashCommandBuilder } from 'discord.js'
+const { SlashCommandBuilder } = require("discord.js")
 const { hasPermission, isPublicChannel } = require('../../util/permissions.js')
 
-export default {
+module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ping')
 		.setDescription('Afficher la latence du bot'),
