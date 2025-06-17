@@ -1,6 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js')
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js'
 
-module.exports = {
+export default {
 	data: new SlashCommandBuilder()
 		.setName('ban')
 		.setDescription('Bannit un membre du serveur')
@@ -15,42 +15,16 @@ module.exports = {
 		.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	
 	async execute(interaction, client) {
-		const member = interaction.member
-		const guild = interaction.guild
-		const channel = interaction.channel
 		const targetUser = interaction.options.getUser('membre')
 		const reason = interaction.options.getString('raison') || 'Aucune raison spécifiée'
 		
-		// Vérification des permissions
-		let perm = ""
-		member.roles.cache.forEach(role => {
-			if (client.db?.get(`modsp_${guild.id}_${role.id}`)) perm = true
-			if (client.db?.get(`ownerp_${guild.id}_${role.id}`)) perm = true
-			if (client.db?.get(`admin_${guild.id}_${role.id}`)) perm = true
-		})
-		
-		const hasAccess = client.config.owner.includes(member.id) || 
-						 client.db?.get(`ownermd_${client.user.id}_${member.id}`) === true || 
-						 perm || 
-						 client.db?.get(`channelpublic_${guild.id}_${channel.id}`) === true
-		
-		if (!hasAccess) {
-			const errorEmbed = new EmbedBuilder()
-				.setColor('#8B0000')
-				.setTitle('Permission refusée')
-				.setDescription('Vous n\'avez pas la permission d\'utiliser cette commande.')
-				.setTimestamp()
-			
-			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
-		}
-		
 		// Vérifier si l'utilisateur peut être banni
-		const targetMember = await guild.members.fetch(targetUser.id).catch(() => null)
+		const targetMember = await interaction.guild.members.fetch(targetUser.id).catch(() => null)
 		
 		if (!targetMember) {
 			const errorEmbed = new EmbedBuilder()
 				.setColor('#8B0000')
-				.setTitle('Erreur')
+				.setTitle('❌ Erreur')
 				.setDescription('Cet utilisateur n\'est pas membre de ce serveur.')
 				.setTimestamp()
 			
@@ -60,17 +34,17 @@ module.exports = {
 		if (!targetMember.bannable) {
 			const errorEmbed = new EmbedBuilder()
 				.setColor('#8B0000')
-				.setTitle('Erreur')
+				.setTitle('❌ Erreur')
 				.setDescription('Je ne peux pas bannir cet utilisateur.')
 				.setTimestamp()
 			
 			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
 		}
 		
-		if (targetMember.id === member.id) {
+		if (targetMember.id === interaction.user.id) {
 			const errorEmbed = new EmbedBuilder()
 				.setColor('#8B0000')
-				.setTitle('Erreur')
+				.setTitle('❌ Erreur')
 				.setDescription('Vous ne pouvez pas vous bannir vous-même.')
 				.setTimestamp()
 			
@@ -78,7 +52,7 @@ module.exports = {
 		}
 		
 		try {
-			await targetMember.ban({ reason: `${reason} - Banni par ${member.user.tag}` })
+			await targetMember.ban({ reason: `${reason} - Banni par ${interaction.user.tag}` })
 			
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
@@ -86,7 +60,7 @@ module.exports = {
 				.setDescription(`**${targetUser.tag}** a été banni du serveur.`)
 				.addFields(
 					{ name: 'Raison', value: reason, inline: true },
-					{ name: 'Banni par', value: member.user.tag, inline: true }
+					{ name: 'Banni par', value: interaction.user.tag, inline: true }
 				)
 				.setTimestamp()
 			
@@ -96,7 +70,7 @@ module.exports = {
 			console.error('Erreur lors du bannissement:', error)
 			const errorEmbed = new EmbedBuilder()
 				.setColor('#8B0000')
-				.setTitle('Erreur')
+				.setTitle('❌ Erreur')
 				.setDescription('Une erreur est survenue lors du bannissement.')
 				.setTimestamp()
 			

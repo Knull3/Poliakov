@@ -1,4 +1,23 @@
-const db = require('quick.db')
+import fs from 'fs';
+
+const PERM_PATH = './data/permissions.json';
+
+function getPermissions() {
+  if (!fs.existsSync(PERM_PATH)) {
+    fs.writeFileSync(PERM_PATH, JSON.stringify({ admin: [], mod: [], owner: [], public: [] }, null, 2));
+  }
+  return JSON.parse(fs.readFileSync(PERM_PATH, 'utf-8'));
+}
+
+function hasPermission(userId, roleIds, type) {
+  const perms = getPermissions();
+  return (
+    perms[type]?.includes(userId) ||
+    roleIds.some(rid => perms[type]?.includes(rid))
+  );
+}
+
+export { getPermissions, hasPermission };
 
 function checkPermissions(member, client) {
     let perm = 0
@@ -17,17 +36,11 @@ function checkPermissions(member, client) {
     return perm
 }
 
-function hasPermission(member, client, requiredLevel) {
-    const perm = checkPermissions(member, client)
-    return perm >= requiredLevel
-}
-
 function isPublicChannel(channelId, guildId) {
     return db.get(`channelpublic_${guildId}_${channelId}`) === true
 }
 
 module.exports = {
     checkPermissions,
-    hasPermission,
     isPublicChannel
 } 
