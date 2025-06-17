@@ -1,29 +1,26 @@
-const {
-    readdirSync
-} = require('fs');
+import { readdirSync } from 'fs';
+import Discord from 'discord.js';
+import logs from 'discord-logs';
+import disbut from 'discord-buttons';
+import tempo from './gestion/tempo.js';
+import config from '../config.json' assert { type: 'json' };
 
 const login = (client) => {
-    const Discord = require("discord.js")
-    const logs = require('discord-logs');
-    logs(client)
-    const disbut = require('discord-buttons');
+    logs(client);
     disbut(client);
-    const tempo = require("./gestion/tempo.js");
-    tempo(client)
+    tempo(client);
 
-    client.config = require("../config.json")
+    client.config = config;
     client.cooldown = new Array();
-    client.interaction = {}
+    client.interaction = {};
     client.guildInvites = new Map();
     client.queue = new Map();
-    client.commands = new Discord.Collection()
-    client.aliases = new Discord.Collection()
-    client.snipes = new Map()
-    client.inter = new Array()
+    client.commands = new Discord.Collection();
+    client.aliases = new Discord.Collection();
+    client.snipes = new Map();
+    client.inter = new Array();
 
     client.login(process.env.token);
-}
+};
 
-module.exports = {
-    login
-}
+export { login };

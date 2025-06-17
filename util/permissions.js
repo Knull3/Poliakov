@@ -1,4 +1,4 @@
-import fs from 'fs';
+const fs = require('fs');
 
 const PERM_PATH = './data/permissions.json';
 
@@ -17,4 +17,4 @@ function hasPermission(userId, roleIds, type) {
   );
 }
 
-export { getPermissions, hasPermission }; 
+module.exports = { getPermissions, hasPermission }; 

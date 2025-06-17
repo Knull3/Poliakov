@@ -1,14 +1,10 @@
 // Polyfill for ReadableStream
-import 'web-streams-polyfill/dist/polyfill.mjs';
+require('web-streams-polyfill/dist/polyfill');
 
-import { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder } from 'discord.js';
-import { readdirSync, readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { hasPermission } from './util/permissions.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder } = require('discord.js');
+const { readdirSync, readFileSync } = require('fs');
+const path = require('path');
+const { hasPermission } = require('./util/permissions.js');
 
 // Configuration
 const config = JSON.parse(readFileSync('./config.json', 'utf-8'));
@@ -49,20 +45,18 @@ const loadSlashCommands = async (dir = './commands/') => {
 	const commandDirs = readdirSync(dir);
 	
 	for (const commandDir of commandDirs) {
-		const commandPath = join(dir, commandDir);
+		const commandPath = path.join(dir, commandDir);
 		const commandFiles = readdirSync(commandPath)
 			.filter(file => file.endsWith('.js') && !file.startsWith('!'));
 
 		for (const file of commandFiles) {
-			let filePath = join(commandPath, file);
-			// Correction : convertir le chemin en URL compatible ES module
-			if (!filePath.startsWith('./')) filePath = './' + filePath.replace(/\\/g, '/');
-			else filePath = filePath.replace(/\\/g, '/');
-			const command = await import(filePath);
+			let filePath = path.join(commandPath, file);
+			// Correction : utiliser require au lieu de import
+			const command = require(filePath);
 			
-			if (command.default?.data) {
-				client.slashCommands.set(command.default.data.name, command.default);
-				console.log(`✅ Commande slash chargée: ${command.default.data.name} [${commandDir}]`);
+			if (command.data) {
+				client.slashCommands.set(command.data.name, command);
+				console.log(`✅ Commande slash chargée: ${command.data.name} [${commandDir}]`);
 			}
 		}
 	}
@@ -77,16 +71,16 @@ const loadEvents = async (dir = './events/') => {
 	const eventDirs = readdirSync(dir);
 	
 	for (const eventDir of eventDirs) {
-		const eventPath = join(dir, eventDir);
+		const eventPath = path.join(dir, eventDir);
 		const eventFiles = readdirSync(eventPath).filter(file => file.endsWith('.js'));
 
 		for (const file of eventFiles) {
-			const filePath = join(eventPath, file);
-			const event = await import(filePath);
+			const filePath = path.join(eventPath, file);
+			const event = require(filePath);
 			const eventName = file.split('.')[0];
 			
-			if (event.default) {
-				client.on(eventName, event.default.bind(null, client));
+			if (event) {
+				client.on(eventName, event.bind(null, client));
 				console.log(`✅ Event chargé: ${eventName}`);
 			}
 		}
