@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Collection, ActivityType, ClientPresenceStatus, EmbedBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder } from 'discord.js';
 import { readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -48,7 +48,7 @@ const loadSlashCommands = async (dir = './commands/') => {
 	for (const commandDir of commandDirs) {
 		const commandPath = join(dir, commandDir);
 		const commandFiles = readdirSync(commandPath).filter(file => file.endsWith('.js'));
-		
+
 		for (const file of commandFiles) {
 			const filePath = join(commandPath, file);
 			const command = await import(filePath);
@@ -72,7 +72,7 @@ const loadEvents = async (dir = './events/') => {
 	for (const eventDir of eventDirs) {
 		const eventPath = join(dir, eventDir);
 		const eventFiles = readdirSync(eventPath).filter(file => file.endsWith('.js'));
-		
+
 		for (const file of eventFiles) {
 			const filePath = join(eventPath, file);
 			const event = await import(filePath);
@@ -93,7 +93,7 @@ client.once('ready', () => {
 	// Set presence
 	client.user.setPresence({
 		activities: [{ name: 'VScode', type: ActivityType.Streaming }],
-		status: ClientPresenceStatus.DoNotDisturb
+		status: 'dnd'
 	});
 	
 	// Register slash commands

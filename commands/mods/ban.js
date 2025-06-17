@@ -29,8 +29,8 @@ export default {
 				.setTimestamp()
 			
 			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
-		}
-		
+						}
+
 		if (!targetMember.bannable) {
 			const errorEmbed = new EmbedBuilder()
 				.setColor('#8B0000')
@@ -39,7 +39,7 @@ export default {
 				.setTimestamp()
 			
 			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
-		}
+						}
 		
 		if (targetMember.id === interaction.user.id) {
 			const errorEmbed = new EmbedBuilder()
