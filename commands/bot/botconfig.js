@@ -38,10 +38,10 @@ function secur(antijoinbot) {
 }
 
 const activity = {
-  'PLAYING': 'Joue à',
-  'STREAMING': 'Streame',
-  'LISTENING': 'Écoute',
-  'WATCHING': 'Regarde',
+    'PLAYING': 'Joue à',
+    'STREAMING': 'Streame',
+    'LISTENING': 'Écoute',
+    'WATCHING': 'Regarde',
 };
 
 export default {
