@@ -1,160 +1,76 @@
-const Discord = require("discord.js"),
-    ms = require("ms"),
-    cooldown = {}
-const db = require("quick.db")
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
+export default {
+  data: new SlashCommandBuilder()
+    .setName('mute')
+    .setDescription('Rendre muet un utilisateur')
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('Utilisateur à rendre muet')
+        .setRequired(true))
+    .addStringOption(option =>
+      option.setName('duration')
+        .setDescription('Durée du mute (ex: 1h, 30m, 1d)')
+        .setRequired(true))
+    .addStringOption(option =>
+      option.setName('reason')
+        .setDescription('Raison du mute')
+        .setRequired(false))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
+  async execute(interaction, client) {
+    const user = interaction.options.getUser('user');
+    const duration = interaction.options.getString('duration');
+    const reason = interaction.options.getString('reason') || 'Aucune raison spécifiée';
 
-module.exports = {
-    name: 'mute',
-    aliases: [],
-    run: async (client, message, args, prefix, color) => {
+    const member = interaction.guild.members.cache.get(user.id);
 
-
-        let perm = ""
-        message.member.roles.cache.forEach(role => {
-            if (db.get(`modsp_${message.guild.id}_${role.id}`)) perm = true
-            if (db.get(`admin_${message.guild.id}_${role.id}`)) perm = true
-            if (db.get(`ownerp_${message.guild.id}_${role.id}`)) perm = true
-        })
-        if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true || perm) {
-
-            function mutetime(user, time, authorcooldown, muterole) {
-                user.roles.add(muterole.id).then(r => {
-                    authorcooldown.limit++
-                    setTimeout(() => {
-                        user.roles.remove(muterole.id)
-                        db.set(`mute_${message.guild.id}_${user.id}`, null)
-                    }, time);
-                    setTimeout(() => {
-                        authorcooldown.limit = authorcooldown.limit - 1
-                    }, 120000);
-                })
-            };
-
-            function mute(user, authorcooldown, muterole) {
-                db.set(`mute_${message.guild.id}_${user.id}`, true)
-                user.roles.add(muterole.id).then(r => {
-                    authorcooldown.limit++
-                    setTimeout(() => {
-                        authorcooldown.limit = authorcooldown.limit - 1
-                    }, 120000);
-                })
-            };
-            if (args[0]) {
-                let chx = db.get(`logmod_${message.guild.id}`);
-                const logsmod = message.guild.channels.cache.get(chx)
-
-                let Muted = await db.fetch(`mRole_${message.guild.id}`);
-                let muterole = await message.guild.roles.cache.get(Muted) || message.guild.roles.cache.find(role => role.name === `muet`) || message.guild.roles.cache.find(role => role.name === `Muted`) || message.guild.roles.cache.find(role => role.name === `Mute`)
-
-
-                var user = message.mentions.members.first() || message.guild.members.cache.get(args[0])
-                if (!user) return message.channel.send(`Aucun membre trouvée pour: \`${args[0]}\``)
-                if (db.get(`mute_${message.guild.id}_${user.id}`) === true) return message.channel.send(`<@${user.id}> est déjà mute`);
-
-                if (user.id === message.author.id) {
-                    return message.channel.send(`Vous n'avez pas la permission de **mute** *(vous ne pouvez pas vous mute vous même)* <@${user.id}>`);
-                }
-                if (user.roles.highest.position > client.user.id) return message.channel.send(`Je n'ai pas les permissions nécessaires pour **mute** <@${user.id}>`);
-                if (db.get(`ownermd_${message.author.id}`) === true) return message.channel.send(`Vous n'avez pas la permission de **mute** <@${user.id}>`);
-                if (client.config.owner.includes(user.id)) return message.channel.send(`Vous n'avez pas la permission de **mute** *(vous ne pouvez pas mute un owner)* <@${user.id}>`);
-                if (!cooldown[cooldown]) cooldown[message.author.id] = {
-                    limit: 0
-                }
-                var authorcooldown = cooldown[message.author.id]
-
-                if (authorcooldown.limit >= 5) return message.channel.send(`Vous avez atteint votre limite de **mute**, veuillez retenter plus tard!`);
-                if (!muterole) {
-                    message.channel.send("Création d'un rôle muet...")
-                    muterole = await message.guild.roles.create({
-                        data: {
-                            name: 'muet',
-                            permissions: 0
-                        }
-                    }, "Muterole")
-                    message.guild.channels.cache.forEach(channel => channel.createOverwrite(muterole, {
-                        SEND_MESSAGES: false,
-                        CONNECT: false,
-                        ADD_REACTIONS: false
-                    }, "Muterole"))
-                    db.set(`mRole_${message.guild.id}`, `${muterole.id}`)
-
-
-                }
-
-
-                if (args[1]) {
-                    var time = ms(args[1].replace("j", "d"))
-                    if (time) {
-                        var reason = args.slice(2).join(" ")
-                        if (reason) {
-                            message.channel.send(`${user} a été **mute ${args[1]}** pour \`${reason}\``);
-                            user.send(`Vous avez été **mute ${args[1]}** de ${message.guild.name} pour \`${reason}\``)
-                            mutetime(user, time, authorcooldown, muterole)
-                            if (logsmod) logsmod.send(
-                                new Discord.MessageEmbed()
-                                .setColor(color)
-                                .setDescription(`${message.author} a **mute ${args[1]}** ${user} pour \`${reason}\``)
-
-
-                            )
-                        } else {
-                            message.channel.send(`${user} a été **mute ${args[1]}**`);
-                            user.send(`Vous avez été **mute ${args[1]}** de ${message.guild.name}`)
-                            mutetime(user, time, authorcooldown, muterole)
-                            if (logsmod) logsmod.send(
-                                new Discord.MessageEmbed()
-                                .setColor(color)
-                                .setDescription(`${message.author} a **mute ${args[1]}** ${user}`)
-
-
-                            )
-                        }
-
-                        // -- 
-                    } else {
-
-                        var reason = args.slice(1).join(" ")
-                        if (reason) {
-                            message.channel.send(`${user} a été **mute** pour \`${reason}\``);
-                            user.send(`Vous avez été **mute** de ${message.guild.name} pour \`${reason}\``)
-                            mute(user, authorcooldown, muterole)
-                            if (logsmod) logsmod.send(
-                                new Discord.MessageEmbed()
-                                .setColor(color)
-                                .setDescription(`${message.author} a **mute** ${user} pour \`${reason}\``)
-
-
-                            )
-                        } else {
-                            message.channel.send(`${user} a été **mute**`)
-                            user.send(`Vous avez été **mute** de ${message.guild.name}`)
-
-                            mute(user, authorcooldown, muterole)
-                            if (logsmod) logsmod.send(
-                                new Discord.MessageEmbed()
-                                .setColor(color)
-                                .setDescription(`${message.author} a **mute** ${user}`)
-
-
-                            )
-                        }
-                    }
-                } else {
-                    message.channel.send(`${user} a été **mute**`);
-                    user.send(`Vous avez été **mute** de ${message.guild.name}`)
-                    mute(user, authorcooldown, muterole)
-                    if (logsmod) logsmod.send(
-                        new Discord.MessageEmbed()
-                        .setColor(color)
-                        .setDescription(`${message.author} a **mute** ${user}`)
-
-
-                    )
-                }
-            } else {}
-
-        }
+    if (!member) {
+      return interaction.reply({ content: '❌ Cet utilisateur n\'est pas sur ce serveur.', ephemeral: true });
     }
-}
+
+    if (!member.moderatable) {
+      return interaction.reply({ content: '❌ Je ne peux pas rendre muet cet utilisateur.', ephemeral: true });
+    }
+
+    if (member.roles.highest.position >= interaction.member.roles.highest.position) {
+      return interaction.reply({ content: '❌ Vous ne pouvez pas rendre muet quelqu\'un avec un rôle supérieur ou égal au vôtre.', ephemeral: true });
+    }
+
+    // Convertir la durée en millisecondes
+    const ms = require('ms');
+    const durationMs = ms(duration);
+
+    if (!durationMs || durationMs < 60000 || durationMs > 2419200000) {
+      return interaction.reply({ content: '❌ Durée invalide. Utilisez un format comme 1h, 30m, 1d (min: 1m, max: 28j).', ephemeral: true });
+    }
+
+    try {
+      await member.timeout(durationMs, `${reason} - Muet par ${interaction.user.tag}`);
+
+      const embed = new EmbedBuilder()
+        .setColor('#8B0000')
+        .setTitle('🔇 Utilisateur rendu muet')
+        .setThumbnail(user.displayAvatarURL())
+        .addFields(
+          { name: '👤 Utilisateur', value: `${user.tag} (${user.id})`, inline: true },
+          { name: '🛡️ Modérateur', value: `${interaction.user.tag}`, inline: true },
+          { name: '⏱️ Durée', value: duration, inline: true },
+          { name: '📅 Date', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
+          { name: '📝 Raison', value: reason, inline: false }
+        )
+        .setFooter({ text: client.config.name })
+        .setTimestamp();
+
+      return interaction.reply({ embeds: [embed] });
+    } catch (error) {
+      const errorEmbed = new EmbedBuilder()
+        .setColor('#8B0000')
+        .setTitle('❌ Erreur')
+        .setDescription(`Impossible de rendre muet l'utilisateur : ${error.message}`)
+        .setTimestamp();
+
+      return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    }
+  }
+};

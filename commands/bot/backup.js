@@ -165,11 +165,11 @@ export default {
 			for (const emote of backup.emojis) {
 				try {
 					const emoji = client.util.parseEmoji(emote);
-					if (emoji.id) {
+								if (emoji.id) {
 						const link = `https://cdn.discordapp.com/emojis/${emoji.id}.${emoji.animated ? 'gif' : 'png'}`;
 						await interaction.guild.emojis.create(link, emoji.name);
 						successCount++;
-					}
+						}
 				} catch (error) {
 					errorCount++;
 				}
@@ -198,6 +198,6 @@ export default {
 				.setTimestamp();
 			
 			return interaction.reply({ embeds: [embed] });
-		}
+								}
 	}
 };

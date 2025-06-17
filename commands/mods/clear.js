@@ -3,75 +3,61 @@ import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.
 export default {
 	data: new SlashCommandBuilder()
 		.setName('clear')
-		.setDescription('Supprime un nombre spécifique de messages')
+		.setDescription('Supprimer des messages')
 		.addIntegerOption(option =>
-			option.setName('nombre')
+			option.setName('amount')
 				.setDescription('Nombre de messages à supprimer (1-100)')
 				.setRequired(true)
 				.setMinValue(1)
 				.setMaxValue(100))
 		.addUserOption(option =>
-			option.setName('membre')
-				.setDescription('Supprimer seulement les messages de ce membre')
+			option.setName('user')
+				.setDescription('Supprimer seulement les messages de cet utilisateur')
 				.setRequired(false))
 		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	
 	async execute(interaction, client) {
-		const amount = interaction.options.getInteger('nombre')
-		const targetUser = interaction.options.getUser('membre')
+		const amount = interaction.options.getInteger('amount')
+		const user = interaction.options.getUser('user')
 		
 		await interaction.deferReply({ ephemeral: true })
 		
 		try {
-			let messages
+			const messages = await interaction.channel.messages.fetch({ limit: 100 })
+			let messagesToDelete = messages
 			
-			if (targetUser) {
-				// Supprimer les messages d'un utilisateur spécifique
-				messages = await interaction.channel.messages.fetch({ limit: 100 })
-				messages = messages.filter(msg => msg.author.id === targetUser.id).first(amount)
-			} else {
-				// Supprimer les messages généraux
-				messages = await interaction.channel.messages.fetch({ limit: amount })
+			if (user) {
+				messagesToDelete = messages.filter(msg => msg.author.id === user.id)
 			}
 			
-			if (messages.length === 0) {
-				const errorEmbed = new EmbedBuilder()
-					.setColor('#8B0000')
-					.setTitle('❌ Erreur')
-					.setDescription('Aucun message à supprimer trouvé.')
-					.setTimestamp()
-				
-				return interaction.editReply({ embeds: [errorEmbed] })
+			messagesToDelete = messagesToDelete.first(amount)
+			
+			if (messagesToDelete.length === 0) {
+				return interaction.editReply({ content: '❌ Aucun message à supprimer trouvé.', ephemeral: true })
 			}
 			
-			// Supprimer les messages
-			await interaction.channel.bulkDelete(messages, true)
+			await interaction.channel.bulkDelete(messagesToDelete, true)
 			
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
 				.setTitle('🧹 Messages supprimés')
-				.setDescription(`**${messages.length}** message(s) ont été supprimés.`)
+				.setDescription(`${messagesToDelete.length} message(s) ont été supprimés.`)
 				.addFields(
-					{ name: 'Salon', value: interaction.channel.name, inline: true },
-					{ name: 'Supprimé par', value: interaction.user.tag, inline: true }
+					{ name: '📝 Canal', value: `${interaction.channel}`, inline: true },
+					{ name: '🛡️ Modérateur', value: `${interaction.user.tag}`, inline: true }
 				)
+				.setFooter({ text: client.config.name })
 				.setTimestamp()
 			
-			if (targetUser) {
-				embed.addFields({ name: 'Utilisateur ciblé', value: targetUser.tag, inline: true })
-			}
-			
-			await interaction.editReply({ embeds: [embed] })
-			
+			return interaction.editReply({ embeds: [embed] })
 		} catch (error) {
-			console.error('Erreur lors de la suppression:', error)
 			const errorEmbed = new EmbedBuilder()
 				.setColor('#8B0000')
 				.setTitle('❌ Erreur')
-				.setDescription('Une erreur est survenue lors de la suppression des messages.')
+				.setDescription(`Impossible de supprimer les messages : ${error.message}`)
 				.setTimestamp()
 			
-			await interaction.editReply({ embeds: [errorEmbed] })
+			return interaction.editReply({ embeds: [errorEmbed] })
 		}
 	}
 }

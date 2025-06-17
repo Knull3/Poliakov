@@ -1,29 +1,23 @@
-const Discord = require('discord.js')
-const db = require('quick.db')
-const {
-	MessageActionRow,
-	MessageButton,
-	MessageMenuOption,
-	MessageMenu
-} = require('discord-buttons');
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
+export default {
+	data: new SlashCommandBuilder()
+		.setName('theme')
+		.setDescription('Affiche le thème actuel du bot'),
 
-module.exports = {
-	name: 'theme',
-	aliases: ["color"],
-	run: async (client, message, args, prefix, color) => {
+	async execute(interaction, client) {
+		const embed = new EmbedBuilder()
+			.setColor('#8B0000')
+			.setTitle('🎨 Thème du Bot')
+			.setDescription(`Le thème actuel du bot utilise la couleur **Dark Red** (\`#8B0000\`)`)
+			.addFields(
+				{ name: '🎯 Couleur principale', value: '`#8B0000` (Dark Red)', inline: true },
+				{ name: '📊 Statut', value: 'Streaming VScode', inline: true },
+				{ name: '🔧 Type', value: 'Slash Commands', inline: true }
+			)
+			.setFooter({ text: client.config.name })
+			.setTimestamp();
 
-		if (client.config.owner.includes(message.author.id)) {
-
-			let newPrefix = args[0]
-			if (!args[0]) return
-			if (args[1]) return
-			db.set(`color_${message.guild.id}`, args[0])
-			message.channel.send(`Ma couleur d'embed est maintenant : \`${args[0]}\``)
-
-
-		}
-
-
+		return interaction.reply({ embeds: [embed] });
 	}
-}
+};

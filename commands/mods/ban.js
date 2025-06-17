@@ -3,78 +3,67 @@ import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.
 export default {
 	data: new SlashCommandBuilder()
 		.setName('ban')
-		.setDescription('Bannit un membre du serveur')
+		.setDescription('Bannir un utilisateur')
 		.addUserOption(option =>
-			option.setName('membre')
-				.setDescription('Le membre à bannir')
+			option.setName('user')
+				.setDescription('Utilisateur à bannir')
 				.setRequired(true))
 		.addStringOption(option =>
-			option.setName('raison')
-				.setDescription('La raison du bannissement')
+			option.setName('reason')
+				.setDescription('Raison du bannissement')
+				.setRequired(false))
+		.addIntegerOption(option =>
+			option.setName('days')
+				.setDescription('Nombre de jours de messages à supprimer (0-7)')
+				.setMinValue(0)
+				.setMaxValue(7)
 				.setRequired(false))
 		.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	
 	async execute(interaction, client) {
-		const targetUser = interaction.options.getUser('membre')
-		const reason = interaction.options.getString('raison') || 'Aucune raison spécifiée'
+		const user = interaction.options.getUser('user')
+		const reason = interaction.options.getString('reason') || 'Aucune raison spécifiée'
+		const days = interaction.options.getInteger('days') || 0
 		
-		// Vérifier si l'utilisateur peut être banni
-		const targetMember = await interaction.guild.members.fetch(targetUser.id).catch(() => null)
+		const member = interaction.guild.members.cache.get(user.id)
 		
-		if (!targetMember) {
-			const errorEmbed = new EmbedBuilder()
-				.setColor('#8B0000')
-				.setTitle('❌ Erreur')
-				.setDescription('Cet utilisateur n\'est pas membre de ce serveur.')
-				.setTimestamp()
-			
-			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
-						}
-
-		if (!targetMember.bannable) {
-			const errorEmbed = new EmbedBuilder()
-				.setColor('#8B0000')
-				.setTitle('❌ Erreur')
-				.setDescription('Je ne peux pas bannir cet utilisateur.')
-				.setTimestamp()
-			
-			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
-						}
+		if (!member) {
+			return interaction.reply({ content: '❌ Cet utilisateur n\'est pas sur ce serveur.', ephemeral: true })
+		}
 		
-		if (targetMember.id === interaction.user.id) {
-			const errorEmbed = new EmbedBuilder()
-				.setColor('#8B0000')
-				.setTitle('❌ Erreur')
-				.setDescription('Vous ne pouvez pas vous bannir vous-même.')
-				.setTimestamp()
-			
-			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
+		if (!member.bannable) {
+			return interaction.reply({ content: '❌ Je ne peux pas bannir cet utilisateur.', ephemeral: true })
+		}
+		
+		if (member.roles.highest.position >= interaction.member.roles.highest.position) {
+			return interaction.reply({ content: '❌ Vous ne pouvez pas bannir quelqu\'un avec un rôle supérieur ou égal au vôtre.', ephemeral: true })
 		}
 		
 		try {
-			await targetMember.ban({ reason: `${reason} - Banni par ${interaction.user.tag}` })
+			await member.ban({ deleteMessageDays: days, reason: `${reason} - Banni par ${interaction.user.tag}` })
 			
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
-				.setTitle('🔨 Membre banni')
-				.setDescription(`**${targetUser.tag}** a été banni du serveur.`)
+				.setTitle('🔨 Utilisateur banni')
+				.setThumbnail(user.displayAvatarURL())
 				.addFields(
-					{ name: 'Raison', value: reason, inline: true },
-					{ name: 'Banni par', value: interaction.user.tag, inline: true }
+					{ name: '👤 Utilisateur', value: `${user.tag} (${user.id})`, inline: true },
+					{ name: '🛡️ Modérateur', value: `${interaction.user.tag}`, inline: true },
+					{ name: '📅 Date', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
+					{ name: '📝 Raison', value: reason, inline: false }
 				)
+				.setFooter({ text: client.config.name })
 				.setTimestamp()
 			
-			await interaction.reply({ embeds: [embed] })
-			
+			return interaction.reply({ embeds: [embed] })
 		} catch (error) {
-			console.error('Erreur lors du bannissement:', error)
 			const errorEmbed = new EmbedBuilder()
 				.setColor('#8B0000')
 				.setTitle('❌ Erreur')
-				.setDescription('Une erreur est survenue lors du bannissement.')
+				.setDescription(`Impossible de bannir l'utilisateur : ${error.message}`)
 				.setTimestamp()
 			
-			await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
+			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
 		}
 	}
 }

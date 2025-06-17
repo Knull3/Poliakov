@@ -1,52 +1,61 @@
-const Discord = require('discord.js')
-const {
-	MessageEmbed
-} = require('discord.js')
-const db = require('quick.db')
-const {
-	MessageActionRow,
-	MessageButton,
-	MessageMenuOption,
-	MessageMenu
-} = require('discord-buttons');
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js'
+const { hasPermission, isPublicChannel } = require('../../util/permissions.js')
 
-function sleep(ms) {
-	return new Promise((resolve) => {
-		setTimeout(resolve, ms)
-	})
-}
-module.exports = {
-	name: 'ping',
-	aliases: ["speed"],
-
-	run: async (client, message, args, prefix, color) => {
-
+export default {
+	data: new SlashCommandBuilder()
+		.setName('ping')
+		.setDescription('Affiche la latence du bot et de l\'API Discord'),
+	
+	async execute(interaction, client) {
+		const member = interaction.member
+		const guild = interaction.guild
+		const channel = interaction.channel
+		
+		// Vérification des permissions
 		let perm = ""
-		message.member.roles.cache.forEach(role => {
-			if (db.get(`modsp_${message.guild.id}_${role.id}`)) perm = true
-			if (db.get(`ownerp_${message.guild.id}_${role.id}`)) perm = true
-			if (db.get(`admin_${message.guild.id}_${role.id}`)) perm = true
+		member.roles.cache.forEach(role => {
+			if (client.db?.get(`modsp_${guild.id}_${role.id}`)) perm = true
+			if (client.db?.get(`ownerp_${guild.id}_${role.id}`)) perm = true
+			if (client.db?.get(`admin_${guild.id}_${role.id}`)) perm = true
 		})
-		if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true || perm || db.get(`channelpublic_${message.guild.id}_${message.channel.id}`) === true) {
+		
+		const hasAccess = client.config.owner.includes(member.id) || 
+						 client.db?.get(`ownermd_${client.user.id}_${member.id}`) === true || 
+						 perm || 
+						 client.db?.get(`channelpublic_${guild.id}_${channel.id}`) === true
+		
+		if (!hasAccess) {
+			const errorEmbed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('Permission refusée')
+				.setDescription('Vous n\'avez pas la permission d\'utiliser cette commande.')
+				.setTimestamp()
 			
-			let embeed = new Discord.MessageEmbed()
-			embeed.setTitle("Calcul De La Latence Du Bot Et De L'API De Discord...")
-			embeed.addField("Ping", `Calcul en cours`, true)
-			embeed.addField("Latence", `${client.ws.ping}ms`, true)
-			embeed.setColor(color)
-			embeed.setTimestamp()
-			embeed.setFooter(`${client.config.name}`)
-
-			let msg = await message.channel.send(embeed)
-			let embed = new Discord.MessageEmbed()
-			embed.setTitle("Voici La Latence Du Bot Et De L'API De Discord")
-			embed.addField("Ping", `${msg.createdAt - message.createdAt + "ms"}`, true)
-			embed.addField("Latence", `${client.ws.ping}ms`, true)
-			embed.setColor(color)
-			embed.setTimestamp()
-			embed.setFooter(`${client.config.name}`)
-
-			return msg.edit("", embed)
+			return interaction.reply({ embeds: [errorEmbed], ephemeral: true })
 		}
+		
+		const embed = new EmbedBuilder()
+			.setTitle('🏓 Calcul de la latence...')
+			.addFields(
+				{ name: 'Ping', value: 'Calcul en cours', inline: true },
+				{ name: 'Latence', value: `${client.ws.ping}ms`, inline: true }
+			)
+			.setColor('#8B0000')
+			.setTimestamp()
+			.setFooter({ text: client.config.name })
+		
+		const reply = await interaction.reply({ embeds: [embed], fetchReply: true })
+		
+		const finalEmbed = new EmbedBuilder()
+			.setTitle('🏓 Latence du bot')
+			.addFields(
+				{ name: 'Ping', value: `${reply.createdTimestamp - interaction.createdTimestamp}ms`, inline: true },
+				{ name: 'Latence', value: `${client.ws.ping}ms`, inline: true }
+			)
+			.setColor('#8B0000')
+			.setTimestamp()
+			.setFooter({ text: client.config.name })
+
+		await interaction.editReply({ embeds: [finalEmbed] })
 	}
 }

@@ -1,100 +1,60 @@
-const Discord = require('discord.js')
-const db = require('quick.db')
-const ms = require("ms")
-const {
-    MessageActionRow,
-    MessageButton,
-    MessageMenuOption,
-    MessageMenu
-} = require('discord-buttons');
-const cooldown = {}
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
-module.exports = {
-    name: 'unban',
-    aliases: [],
-    run: async (client, message, args, prefix, color) => {
+export default {
+  data: new SlashCommandBuilder()
+    .setName('unban')
+    .setDescription('Débannir un utilisateur')
+    .addStringOption(option =>
+      option.setName('user_id')
+        .setDescription('ID de l\'utilisateur à débannir')
+        .setRequired(true))
+    .addStringOption(option =>
+      option.setName('reason')
+        .setDescription('Raison du débannissement')
+        .setRequired(false))
+    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
-        /*#############################################################UNBAN ALL#####################################################################################*/
+  async execute(interaction, client) {
+    const userId = interaction.options.getString('user_id');
+    const reason = interaction.options.getString('reason') || 'Aucune raison spécifiée';
 
-        if (args[0] == 'all') {
-            let perm = ""
-            message.member.roles.cache.forEach(role => {
-                if (db.get(`ownerp_${message.guild.id}_${role.id}`)) perm = null
-            })
-            if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true || perm) {
-                try {
-                    message.guild.fetchBans().then(bans => {
-                        if (bans.size == 0) {
-                            message.channel.send("Aucune personne n'est ban.")
-                        } else {
-                            bans.forEach(ban => {
-                                setInterval(() => {
-                                    if (ban.user) message.guild.members.unban(ban.user.id, `Unbanall par ${message.author.tag}`).catch(err => {});
-                                }, 250)
+    try {
+      const user = await client.users.fetch(userId);
+      const bans = await interaction.guild.bans.fetch();
+      const ban = bans.get(userId);
 
-                            })
+      if (!ban) {
+        return interaction.reply({ content: '❌ Cet utilisateur n\'est pas banni.', ephemeral: true });
+      }
 
-                            let wass = db.get(`logmod_${message.guild.id}`);
+      await interaction.guild.members.unban(userId, `${reason} - Débanni par ${interaction.user.tag}`);
 
-                            const logsmod = message.guild.channels.cache.get(wass)
+      const embed = new EmbedBuilder()
+        .setColor('#8B0000')
+        .setTitle('🔓 Utilisateur débanni')
+        .setThumbnail(user.displayAvatarURL())
+        .addFields(
+          { name: '👤 Utilisateur', value: `${user.tag} (${user.id})`, inline: true },
+          { name: '🛡️ Modérateur', value: `${interaction.user.tag}`, inline: true },
+          { name: '📅 Date', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
+          { name: '📝 Raison', value: reason, inline: false }
+        )
+        .setFooter({ text: client.config.name })
+        .setTimestamp();
 
-                            message.channel.send(`${bans.size} ${bans.size > 1 ? "utilisateurs ont": "utilisateur a"} été unban`);
-                            if (logsmod) logsmod.send(
+      return interaction.reply({ embeds: [embed] });
+    } catch (error) {
+      if (error.code === 10013) {
+        return interaction.reply({ content: '❌ Utilisateur introuvable.', ephemeral: true });
+      }
 
-                                new Discord.MessageEmbed()
-                                //.setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-                                .setColor(color)
-                                //.setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-                                //.setTimestamp()
-                                //.setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Temps de réponse**: ${client.ws.ping}ms`)
-                                .setDescription(`${message.author} a **unban** tout les membres bannis`))
+      const errorEmbed = new EmbedBuilder()
+        .setColor('#8B0000')
+        .setTitle('❌ Erreur')
+        .setDescription(`Impossible de débannir l'utilisateur : ${error.message}`)
+        .setTimestamp();
 
-                        }
-                    })
-
-                } catch (error) {
-                    return;
-                }
-            }
-
-        } else if (args[0]) {
-
-            /*#############################################################UNBAN#####################################################################################*/
-
-            let perm = ""
-            message.member.roles.cache.forEach(role => {
-                if (db.get(`modsp_${message.guild.id}_${role.id}`)) perm = null
-                if (db.get(`admin_${message.guild.id}_${role.id}`)) perm = true
-                if (db.get(`ownerp_${message.guild.id}_${role.id}`)) perm = true
-            })
-            if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true || perm) {
-                let wass = db.get(`logmod_${message.guild.id}`);
-                const logsmod = message.guild.channels.cache.get(wass)
-
-                const user = client.users.cache.get(args[0])
-                if (!user) return message.channel.send(`Aucun membre trouvée pour \`${args[0]}\``)
-
-                try {
-                    await message.guild.fetchBan(args[0])
-                } catch (e) {
-                    message.channel.send(`<@${args[0]}> n'est pas ban`);
-                    return;
-                }
-
-                message.guild.members.unban(user.id, `Unban par ${message.author.tag}`)
-                message.channel.send(`<@${user.id}> n'est plus **banni**`);
-                if (logsmod) logsmod.send(
-                    new Discord.MessageEmbed()
-                    // .setAuthor(message.author.tag, message.author.displayAvatarURL({dynamic: true}))
-                    .setColor(color)
-                    //        .setTitle(`<:protection:847072581382438953> Modération • Type: **\`bannissement\`**`)
-                    //      .setTimestamp() 
-                    //     .setDescription(` **Bannissement de**: ${user}\n**Auteur**: ${message.author} \n**Salon**: ${message.channel}\n**Temps de réponse**: ${client.ws.ping}ms`)
-                    .setDescription(`${message.author} a **unban** ${user}`))
-
-
-            }
-        }
-
+      return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
     }
-}
+  }
+};

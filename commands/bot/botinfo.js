@@ -1,41 +1,29 @@
-const Discord = require('discord.js')
-const db = require('quick.db')
-const axios = require("axios");
-const {
-	MessageActionRow,
-	MessageButton,
-	MessageMenuOption,
-	MessageMenu
-} = require('discord-buttons');
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
-module.exports = {
-	name: 'botinfo',
-	aliases: ['infobot', 'uptime'],
-	run: async (client, message, args, prefix, color) => {
+export default {
+	data: new SlashCommandBuilder()
+		.setName('botinfo')
+		.setDescription('Affiche les informations du bot'),
 
-		if (client.config.owner.includes(message.author.id)) {
+	async execute(interaction, client) {
+		const embed = new EmbedBuilder()
+			.setColor('#8B0000')
+			.setTitle('🤖 Informations du Bot')
+			.setThumbnail(client.user.displayAvatarURL())
+			.addFields(
+				{ name: '📛 Nom', value: client.user.username, inline: true },
+				{ name: '🆔 ID', value: client.user.id, inline: true },
+				{ name: '📅 Créé le', value: `<t:${Math.floor(client.user.createdTimestamp / 1000)}:F>`, inline: true },
+				{ name: '🏠 Serveurs', value: `${client.guilds.cache.size}`, inline: true },
+				{ name: '👥 Utilisateurs', value: `${client.users.cache.size}`, inline: true },
+				{ name: '📊 Ping', value: `${client.ws.ping}ms`, inline: true },
+				{ name: '⚡ Version Discord.js', value: '14.x', inline: true },
+				{ name: '🔧 Version Node.js', value: process.version, inline: true },
+				{ name: '💾 Mémoire', value: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`, inline: true }
+			)
+			.setFooter({ text: client.config.name })
+			.setTimestamp();
 
-            const embed = new Discord.MessageEmbed()
-
-            embed.setTitle(`Information à Propos De : ${client.user.username}`)
-            embed.setURL('https://discord.gg/9ZfB8m5E88')
-            embed.setDescription('**Une description complète et détaillée du Bot** <@1072572383648563201>')
-            embed.setColor(color)
-            .setThumbnail(message.author.avatarURL({ dynamic:true }));
-            embed.setTimestamp()
-            embed.setFooter(`${client.config.name}`)
-            embed.addFields(
-                { name: '👑 Owner / Developer :', value: '<@880850845124669510>', inline: true },
-                { name: '🔌 Latence Ping Bot :', value: `\`${client.ws.ping}Ms\`` },
-                { name: '🚀 Total Server(s) :', value: `\`${client.guilds.cache.size}\``, inline: true },
-                { name: '👥 Total User(s) :', value: `\`${client.guilds.cache.reduce((a, b) => a + b.memberCount, 0)}\``, inline: true },
-                { name: '📞 Support :', value: `[Clique ICI Pour Rejoindre Le Support](https://discord.gg/XFMx9ftYv9)`, inline: true },
-                { name: '📗 Node.js Version :', value: `\`${process.version}\``, inline: true },
-                { name: "📚 Discord.js Version :", value: `\`${Discord.version}\``, inline: true },
-                { name: "🟢 Uptime :", value: `<t:${(Date.now()-client.uptime).toString().slice(0, -3)}:R>`, inline: true }, 
-            )
-
-            message.channel.send(embed);
-        }
-    }
-}
+		return interaction.reply({ embeds: [embed] });
+	}
+};
