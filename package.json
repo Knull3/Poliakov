@@ -11,6 +11,10 @@
   "dependencies": {
     "discord.js": "^14.20.0",
     "web-streams-polyfill": "^3.2.1",
-    "ms": "^2.1.3"
+    "ms": "^2.1.3",
+    "axios": "^1.6.5",
+    "quick.db": "^9.1.7",
+    "discord-buttons": "^4.0.0",
+    "discord-logs": "^2.2.1"
   }
 }

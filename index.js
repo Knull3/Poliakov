@@ -50,13 +50,18 @@ const loadSlashCommands = async (dir = './commands/') => {
 			.filter(file => file.endsWith('.js') && !file.startsWith('!'));
 
 		for (const file of commandFiles) {
-			let filePath = path.join(commandPath, file);
-			// Correction : utiliser require au lieu de import
-			const command = require(filePath);
-			
-			if (command.data) {
-				client.slashCommands.set(command.data.name, command);
-				console.log(`✅ Commande slash chargée: ${command.data.name} [${commandDir}]`);
+			// Construire le chemin complet pour require
+			const filePath = `./${path.join(commandPath, file)}`.replace(/\\/g, '/');
+			// Utiliser require avec le chemin relatif
+			try {
+				const command = require(filePath);
+				
+				if (command.data) {
+					client.slashCommands.set(command.data.name, command);
+					console.log(`✅ Commande slash chargée: ${command.data.name} [${commandDir}]`);
+				}
+			} catch (error) {
+				console.error(`Erreur lors du chargement de la commande ${filePath}:`, error);
 			}
 		}
 	}
@@ -75,13 +80,18 @@ const loadEvents = async (dir = './events/') => {
 		const eventFiles = readdirSync(eventPath).filter(file => file.endsWith('.js'));
 
 		for (const file of eventFiles) {
-			const filePath = path.join(eventPath, file);
-			const event = require(filePath);
-			const eventName = file.split('.')[0];
-			
-			if (event) {
-				client.on(eventName, event.bind(null, client));
-				console.log(`✅ Event chargé: ${eventName}`);
+			// Construire le chemin complet pour require
+			const filePath = `./${path.join(eventPath, file)}`.replace(/\\/g, '/');
+			try {
+				const event = require(filePath);
+				const eventName = file.split('.')[0];
+				
+				if (event) {
+					client.on(eventName, event.bind(null, client));
+					console.log(`✅ Event chargé: ${eventName}`);
+				}
+			} catch (error) {
+				console.error(`Erreur lors du chargement de l'événement ${filePath}:`, error);
 			}
 		}
 	}
