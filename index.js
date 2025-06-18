@@ -11,7 +11,11 @@ const IGNORED_FILES = [
 	'events/rolemenu/clickButton.js',
 	'util/embedButton/start.js',
 	'commands/utilitaire/banner.js',
-	'commands/utilitaire/snipe.js'
+	'commands/utilitaire/snipe.js',
+	'commands/music/play.js',
+	'commands/music/queue.js',
+	'commands/music/skip.js',
+	'commands/music/stop.js'
 ];
 
 // Configuration
@@ -59,6 +63,9 @@ const loadSlashCommands = async (dir = './commands/') => {
 	const commandDirs = readdirSync(dir);
 	
 	for (const commandDir of commandDirs) {
+		// Ignorer le dossier music et utiliser musique à la place
+		if (commandDir === 'music') continue;
+		
 		const commandPath = path.join(dir, commandDir);
 		const commandFiles = readdirSync(commandPath)
 			.filter(file => file.endsWith('.js') && !file.startsWith('!'));
