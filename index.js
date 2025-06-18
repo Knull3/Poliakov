@@ -10,8 +10,6 @@ const { hasPermission } = require('./util/permissions.js');
 const IGNORED_FILES = [
 	'events/rolemenu/clickButton.js',
 	'util/embedButton/start.js',
-	'commands/utilitaire/banner.js',
-	'commands/utilitaire/snipe.js',
 	'commands/music/play.js',
 	'commands/music/queue.js',
 	'commands/music/skip.js',
@@ -47,6 +45,7 @@ const client = new Client({
 client.slashCommands = new Collection();
 client.config = config;
 client.guildInvites = new Map(); // Ajout pour éviter les erreurs de référence
+client.snipes = new Map(); // Collection pour stocker les messages supprimés
 
 // Error handling
 process.on('unhandledRejection', err => {
@@ -87,6 +86,11 @@ const loadSlashCommands = async (dir = './commands/') => {
 				if (command.data) {
 					client.slashCommands.set(command.data.name, command);
 					console.log(`✅ Commande slash chargée: ${command.data.name} [${commandDir}]`);
+					
+					// Initialiser les fonctionnalités supplémentaires si nécessaire
+					if (command.setup) {
+						command.setup(client);
+					}
 				}
 			} catch (error) {
 				console.error(`Erreur lors du chargement de la commande ${filePath}:`, error);
@@ -132,9 +136,23 @@ const loadEvents = async (dir = './events/') => {
 	}
 };
 
+// Gestionnaire de messages supprimés pour la commande snipe
+client.on('messageDelete', message => {
+	if (message.author.bot) return;
+	
+	// Stocker le message supprimé
+	client.snipes.set(message.channel.id, {
+		content: message.content,
+		author: message.author,
+		image: message.attachments.first() ? message.attachments.first().proxyURL : null,
+		timestamp: Date.now()
+	});
+});
+
 // Ready event
 client.once('ready', () => {
 	console.log(`🤖 Bot connecté en tant que ${client.user.tag}`);
+	console.log(`✅ Bot prêt: ${client.user.username}`);
 	
 	// Set presence
 	client.user.setPresence({
