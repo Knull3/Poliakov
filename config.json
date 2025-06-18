@@ -9,5 +9,12 @@
         "880850845124669510", 
         "",
         ""
-    ]
+    ],
+    "supportServer": "https://discord.gg/Tcp6RPdB",
+    "webhooks": {
+        "logs": "",
+        "errors": "",
+        "joins": ""
+    },
+    "version": "1.0.0"
 }

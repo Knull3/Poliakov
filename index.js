@@ -1,14 +1,13 @@
 // Polyfill for ReadableStream
 require('web-streams-polyfill/dist/polyfill');
 
-const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, Partials } = require('discord.js');
 const { readdirSync, readFileSync } = require('fs');
 const path = require('path');
 const { hasPermission } = require('./util/permissions.js');
 
 // Liste des fichiers à ignorer
 const IGNORED_FILES = [
-	'events/rolemenu/clickButton.js',
 	'util/embedButton/start.js',
 	'commands/music/play.js',
 	'commands/music/queue.js',
@@ -38,6 +37,13 @@ const client = new Client({
 		GatewayIntentBits.DirectMessages,
 		GatewayIntentBits.DirectMessageReactions,
 		GatewayIntentBits.DirectMessageTyping,
+	],
+	partials: [
+		Partials.Message,
+		Partials.Channel,
+		Partials.Reaction,
+		Partials.User,
+		Partials.GuildMember
 	]
 });
 
@@ -46,6 +52,7 @@ client.slashCommands = new Collection();
 client.config = config;
 client.guildInvites = new Map(); // Ajout pour éviter les erreurs de référence
 client.snipes = new Map(); // Collection pour stocker les messages supprimés
+client.buttonHandlers = new Collection(); // Collection pour les gestionnaires de boutons
 
 // Error handling
 process.on('unhandledRejection', err => {
@@ -109,7 +116,13 @@ const loadEvents = async (dir = './events/') => {
 	
 	for (const eventDir of eventDirs) {
 		const eventPath = path.join(dir, eventDir);
-		const eventFiles = readdirSync(eventPath).filter(file => file.endsWith('.js'));
+		
+		// Vérifier si c'est un dossier
+		if (!readdirSync(eventPath, { withFileTypes: true }).some(dirent => dirent.isFile())) {
+			continue;
+		}
+		
+		const eventFiles = readdirSync(eventPath).filter(file => file.endsWith('.js') && !file.startsWith('!'));
 
 		for (const file of eventFiles) {
 			// Construire le chemin complet pour require
@@ -125,9 +138,15 @@ const loadEvents = async (dir = './events/') => {
 				const event = require(filePath);
 				const eventName = file.split('.')[0];
 				
-				if (event) {
-					client.on(eventName, event.bind(null, client));
-					console.log(`✅ Event chargé: ${eventName}`);
+				if (typeof event === 'function') {
+					if (eventName === 'ready') {
+						client.once(eventName, event.bind(null, client));
+					} else {
+						client.on(eventName, event.bind(null, client));
+					}
+					console.log(`✅ Event chargé: ${eventName} [${eventDir}]`);
+				} else {
+					console.warn(`⚠️ Event non chargé: ${eventName} - Ce n'est pas une fonction.`);
 				}
 			} catch (error) {
 				console.error(`Erreur lors du chargement de l'événement ${filePath}:`, error);
@@ -136,13 +155,25 @@ const loadEvents = async (dir = './events/') => {
 	}
 };
 
+// Charge le gestionnaire de boutons spécial
+const loadButtonHandler = () => {
+	try {
+		const buttonHandler = require('./events/rolemenu/clickButton.js');
+		client.buttonHandlers.set('clickButton', buttonHandler);
+		console.log('✅ Gestionnaire de boutons chargé');
+	} catch (error) {
+		console.error('Erreur lors du chargement du gestionnaire de boutons:', error);
+	}
+};
+
 // Gestionnaire de messages supprimés pour la commande snipe
 client.on('messageDelete', message => {
-	if (message.author.bot) return;
+	if (message.author && message.author.bot) return;
+	if (!message.content && !message.attachments.size) return;
 	
 	// Stocker le message supprimé
 	client.snipes.set(message.channel.id, {
-		content: message.content,
+		content: message.content || 'Aucun contenu',
 		author: message.author,
 		image: message.attachments.first() ? message.attachments.first().proxyURL : null,
 		timestamp: Date.now()
@@ -156,8 +187,8 @@ client.once('ready', () => {
 	
 	// Set presence
 	client.user.setPresence({
-		activities: [{ name: 'VScode', type: ActivityType.Streaming }],
-		status: 'dnd'
+		activities: [{ name: config.prefix + 'help', type: ActivityType.Listening }],
+		status: 'online'
 	});
 	
 	// Register slash commands
@@ -170,12 +201,22 @@ client.once('ready', () => {
 
 // Interaction handler
 client.on('interactionCreate', async interaction => {
-	if (!interaction.isCommand()) return;
-
-	const command = client.slashCommands.get(interaction.commandName);
-	if (!command) return;
-
 	try {
+		// Gérer les boutons
+		if (interaction.isButton()) {
+			const buttonHandler = client.buttonHandlers.get('clickButton');
+			if (buttonHandler) {
+				await buttonHandler(client, interaction);
+			}
+			return;
+		}
+		
+		// Gérer les commandes slash
+		if (!interaction.isCommand()) return;
+
+		const command = client.slashCommands.get(interaction.commandName);
+		if (!command) return;
+
 		// Check permissions
 		const member = interaction.member;
 		const roleIds = member.roles.cache.map(role => role.id);
@@ -201,7 +242,7 @@ client.on('interactionCreate', async interaction => {
 		
 		await command.execute(interaction, client);
 	} catch (error) {
-		console.error(`Erreur dans la commande ${interaction.commandName}:`, error);
+		console.error(`Erreur dans l'interaction:`, error);
 		
 		const errorEmbed = new EmbedBuilder()
 			.setColor('#8B0000')
@@ -209,22 +250,35 @@ client.on('interactionCreate', async interaction => {
 			.setDescription('Une erreur est survenue lors de l\'exécution de cette commande.')
 			.setTimestamp();
 		
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
-		} else {
-			await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+		try {
+			if (interaction.replied || interaction.deferred) {
+				await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+			} else {
+				await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+			}
+		} catch (replyError) {
+			console.error('Erreur lors de la réponse à l\'interaction:', replyError);
 		}
 	}
 });
+
+// Keep Alive pour les hébergeurs comme Replit
+try {
+	require('./keep_alive.js');
+	console.log('✅ Keep Alive activé');
+} catch (error) {
+	console.log('ℹ️ Keep Alive non utilisé');
+}
 
 // Load everything and start
 const startBot = async () => {
 	try {
 		await loadSlashCommands();
 		await loadEvents();
+		loadButtonHandler();
 		
 		// Login
-		const token = process.env.token;
+		const token = process.env.token || process.env.TOKEN;
 		if (!token) {
 			console.error('❌ Token manquant. Ajoutez votre token dans les variables d\'environnement (process.env.token).');
 			return;
