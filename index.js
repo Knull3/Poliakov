@@ -42,6 +42,7 @@ const client = new Client({
 // Collections
 client.slashCommands = new Collection();
 client.config = config;
+client.guildInvites = new Map(); // Ajout pour éviter les erreurs de référence
 
 // Error handling
 process.on('unhandledRejection', err => {
