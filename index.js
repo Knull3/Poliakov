@@ -26,7 +26,8 @@ const client = new Client({
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildVoiceStates,
 		GatewayIntentBits.MessageContent,
-		GatewayIntentBits.GuildPresences,
+		// Intents privilégiés - Nécessitent une activation dans le portail développeur Discord
+		// GatewayIntentBits.GuildPresences, // Intent privilégié
 		GatewayIntentBits.GuildBans,
 		GatewayIntentBits.GuildEmojisAndStickers,
 		GatewayIntentBits.GuildIntegrations,
@@ -185,9 +186,13 @@ client.once('ready', () => {
 	console.log(`🤖 Bot connecté en tant que ${client.user.tag}`);
 	console.log(`✅ Bot prêt: ${client.user.username}`);
 	
-	// Set presence
+	// Set presence - Streaming "Saa Devv"
 	client.user.setPresence({
-		activities: [{ name: config.prefix + 'help', type: ActivityType.Listening }],
+		activities: [{ 
+			name: 'Saa Devv', 
+			type: ActivityType.Streaming,
+			url: 'https://twitch.tv/saadevv'  // URL Twitch requise pour le streaming
+		}],
 		status: 'online'
 	});
 	
