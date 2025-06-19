@@ -211,7 +211,19 @@ client.on('interactionCreate', async interaction => {
 		if (interaction.isButton()) {
 			const buttonHandler = client.buttonHandlers.get('clickButton');
 			if (buttonHandler) {
-				await buttonHandler(client, interaction);
+				try {
+					await buttonHandler(client, interaction);
+				} catch (buttonError) {
+					console.error(`Erreur dans le gestionnaire de bouton:`, buttonError);
+					
+					// Répondre uniquement si l'interaction n'a pas encore été traitée
+					if (!interaction.replied && !interaction.deferred) {
+						await interaction.reply({
+							content: 'Une erreur est survenue lors du traitement de ce bouton.',
+							ephemeral: true
+						}).catch(e => console.error('Impossible de répondre au bouton:', e));
+					}
+				}
 			}
 			return;
 		}
@@ -236,30 +248,52 @@ client.on('interactionCreate', async interaction => {
 			hasPermission(interaction.channelId, [], 'public');
 		
 		if (!hasAccess) {
-			const errorEmbed = new EmbedBuilder()
-				.setColor('#8B0000')
-				.setTitle('❌ Permission refusée')
-				.setDescription('Vous n\'avez pas la permission d\'utiliser cette commande.')
-				.setTimestamp();
-			
-			return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+			try {
+				return await interaction.reply({
+					embeds: [
+						new EmbedBuilder()
+							.setColor('#8B0000')
+							.setTitle('❌ Permission refusée')
+							.setDescription('Vous n\'avez pas la permission d\'utiliser cette commande.')
+							.setTimestamp()
+					], 
+					ephemeral: true
+				});
+			} catch (permError) {
+				console.error('Erreur lors de la réponse de permission:', permError);
+				return;
+			}
 		}
 		
+		// Exécuter la commande
 		await command.execute(interaction, client);
 	} catch (error) {
 		console.error(`Erreur dans l'interaction:`, error);
 		
-		const errorEmbed = new EmbedBuilder()
-			.setColor('#8B0000')
-			.setTitle('❌ Erreur')
-			.setDescription('Une erreur est survenue lors de l\'exécution de cette commande.')
-			.setTimestamp();
+		// Ne pas essayer de répondre si l'erreur est une interaction inconnue
+		if (error.code === 10062) {
+			console.log('Interaction expirée, impossible de répondre');
+			return;
+		}
 		
+		// Essayer de répondre avec une erreur
 		try {
+			const errorEmbed = new EmbedBuilder()
+				.setColor('#8B0000')
+				.setTitle('❌ Erreur')
+				.setDescription('Une erreur est survenue lors de l\'exécution de cette commande.')
+				.setTimestamp();
+			
 			if (interaction.replied || interaction.deferred) {
-				await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+				await interaction.followUp({
+					embeds: [errorEmbed],
+					ephemeral: true
+				}).catch(() => console.log('Impossible d\'envoyer followUp'));
 			} else {
-				await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+				await interaction.reply({
+					embeds: [errorEmbed],
+					ephemeral: true
+				}).catch(() => console.log('Impossible de répondre'));
 			}
 		} catch (replyError) {
 			console.error('Erreur lors de la réponse à l\'interaction:', replyError);
