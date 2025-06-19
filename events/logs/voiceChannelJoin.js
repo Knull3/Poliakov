@@ -1,19 +1,26 @@
-const axios = require('axios');
-const db = require("quick.db")
-const Discord = require("discord.js");
-const ms = require("ms")
+const db = require("../../util/db.js");
+const { EmbedBuilder } = require("discord.js");
 
 module.exports = async (client, member, channel) => {
+    if (!member || !channel || !member.guild) return;
     
-	const color = db.get(`color_${member.guild.id}`) === null ? client.config.color : db.get(`color_${member.guild.id}`)
-	let wass = db.get(`logvc_${member.guild.id}`);
-	const logschannel = member.guild.channels.cache.get(wass)
-    
-	if (logschannel) logschannel.send(new Discord.MessageEmbed()
-
-		.setColor(color)
-		.setDescription(`${member} Rejoint le **salon vocal** <#${channel.id}>`)
-		.setFooter(`${client.config.name}`)
-		.setTimestamp()
-	)
-}
+    try {
+        const color = await db.get(`color_${member.guild.id}`) || client.config.color;
+        const logChannelId = await db.get(`logvc_${member.guild.id}`);
+        
+        if (!logChannelId) return;
+        
+        const logChannel = member.guild.channels.cache.get(logChannelId);
+        if (!logChannel) return;
+        
+        const embed = new EmbedBuilder()
+            .setColor(color)
+            .setDescription(`${member} a rejoint le **salon vocal** <#${channel.id}>`)
+            .setFooter({ text: client.config.name })
+            .setTimestamp();
+        
+        await logChannel.send({ embeds: [embed] });
+    } catch (error) {
+        console.error("Erreur dans le log voiceChannelJoin:", error);
+    }
+};

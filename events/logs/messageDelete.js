@@ -1,20 +1,48 @@
-const axios = require('axios');
-const db = require("quick.db")
-const Discord = require("discord.js");
-const ms = require("ms")
+const db = require("../../util/db.js");
+const { EmbedBuilder } = require("discord.js");
 
-module.exports = (client, message) => {
+module.exports = async (client, message) => {
+    // Ignorer les messages des bots et les messages provenant des DM
+    if (!message.guild || !message.author || message.author.bot) return;
     
-	let guild = message.guild
-	const color = db.get(`color_${guild.id}`) === null ? client.config.color : db.get(`color_${guild.id}`)
-	let wass = db.get(`msglog_${message.guild.id}`);
-	const logschannel = message.guild.channels.cache.get(wass)
+    try {
+        const guild = message.guild;
+        const color = await db.get(`color_${guild.id}`) || client.config.color;
+        const logChannelId = await db.get(`msglog_${guild.id}`);
+        
+        if (!logChannelId) return;
+        
+        const logChannel = guild.channels.cache.get(logChannelId);
+        if (!logChannel) return;
 
-	if (logschannel) logschannel.send(new Discord.MessageEmbed()
-        .setColor(color)
-		.setAuthor(`Message supprimé`)
-		.setDescription(`dans <#${message.channel.id}> par ${message.author}`)
-		.addField(`Message Supprimé :`, `${message.content} **(embed)**`)
-		.setFooter(`${client.config.name}`)
-		.setTimestamp())
-}
+        // Limiter la longueur du message pour éviter des erreurs
+        const maxLength = 1024;
+        const content = message.content 
+            ? (message.content.length > maxLength 
+                ? message.content.substring(0, maxLength) + "..." 
+                : message.content)
+            : "Aucun contenu textuel";
+
+        const embed = new EmbedBuilder()
+            .setColor(color)
+            .setAuthor({ 
+                name: `Message supprimé`, 
+                iconURL: message.author.displayAvatarURL({ dynamic: true }) 
+            })
+            .setDescription(`dans <#${message.channel.id}> par ${message.author}`)
+            .addFields({ name: `Message Supprimé :`, value: content })
+            .setFooter({ text: client.config.name })
+            .setTimestamp();
+
+        if (message.attachments.size > 0) {
+            embed.addFields({ 
+                name: 'Pièces jointes supprimées :',
+                value: message.attachments.map(a => a.name || 'Pièce jointe sans nom').join('\n')
+            });
+        }
+
+        await logChannel.send({ embeds: [embed] });
+    } catch (error) {
+        console.error("Erreur dans le log messageDelete:", error);
+    }
+};

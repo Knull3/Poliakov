@@ -1,5 +1,5 @@
 const axios = require('axios');
-const db = require("quick.db")
+const db = require("../../util/db.js");
 const {
 	MessageEmbed
 } = require("discord.js");
@@ -13,15 +13,20 @@ module.exports = async (client, reaction, user) => {
 		guild
 	} = reaction.message;
 	if (!guild) return;
-	if (!guild.me.hasPermission("MANAGE_ROLES")) return;
+	if (!guild.members.me.permissions.has("ManageRoles")) return;
 	const member = guild.members.cache.get(user.id);
 	if (!member) return;
-	const data = db.get(`reactions_${guild.id}`)
-	if (!data) return;
-	const reaction2 = data.find(
-		(r) => r.emoji === reaction.emoji.toString() && r.msg === reaction.message.id
-	);
-	if (!reaction2) return;
-	member.roles.remove(reaction2.roleId).catch(err => undefined);
-
+	try {
+		const data = await db.get(`reactions_${guild.id}`);
+		if (!data) return;
+		const reaction2 = data.find(
+			(r) => r.emoji === reaction.emoji.toString() && r.msg === reaction.message.id
+		);
+		if (!reaction2) return;
+		await member.roles.remove(reaction2.roleId).catch(err => 
+			console.error(`Erreur lors du retrait du rôle (${reaction2.roleId}) de ${member.user.tag}:`, err)
+		);
+	} catch (error) {
+		console.error("Erreur dans messageReactionremove:", error);
+	}
 }
