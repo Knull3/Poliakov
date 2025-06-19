@@ -108,11 +108,13 @@ Actuel: ${secur(getBotConfigValue(client.user.id, 'antijoinbot'))}
 
     const response = await interaction.reply({
       embeds: [embed],
-      components: [row],
-      fetchReply: true
+      components: [row]
     });
+    
+    // Récupérer le message de réponse
+    const replyMessage = await interaction.fetchReply();
 
-    const collector = response.createMessageComponentCollector({ time: 300000 });
+    const collector = replyMessage.createMessageComponentCollector({ time: 300000 });
 
     collector.on('collect', async i => {
       if (i.user.id !== interaction.user.id) {
@@ -257,7 +259,7 @@ Actuel: ${secur(getBotConfigValue(client.user.id, 'antijoinbot'))}
             .setDisabled(true)
         );
 
-      response.edit({ components: [disabledRow] }).catch(() => {});
+      replyMessage.edit({ components: [disabledRow] }).catch(() => {});
     });
   }
 };
