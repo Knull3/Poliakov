@@ -1,30 +1,28 @@
 const axios = require('axios');
-const db = require("quick.db")
+const db = require("../../util/db")
 const {
 	MessageEmbed
 } = require("discord.js");
 const ms = require("ms")
 
-module.exports = (client, role) => {
+module.exports = async (client, role) => {
 	const guild = role.guild
-	const color = db.get(`color_${guild.id}`) === null ? client.config.color : db.get(`color_${guild.id}`)
-
-
+	const color = await db.get(`color_${guild.id}`) === null ? client.config.color : await db.get(`color_${guild.id}`)
 
 	// -- Audit Logs
 	axios.get(`https://discord.com/api/v9/guilds/${guild.id}/audit-logs?ilimit=1&action_type=32`, {
 		headers: {
 			Authorization: `Bot ${process.env.token}`
 		}
-	}).then(response => {
-		const raidlog = guild.channels.cache.get(db.get(`${guild.id}.raidlog`))
+	}).then(async response => {
+		const raidlog = guild.channels.cache.get(await db.get(`${guild.id}.raidlog`))
 		if (response.data && response.data.audit_log_entries[0].user_id) {
 			let perm = ""
 			if (client.user.id === response.data.audit_log_entries[0].user_id) return undefined
-			if (db.get(`rolesdelwl_${guild.id}`) === null) perm = client.user.id === response.data.audit_log_entries[0].user_id || guild.owner.id === response.data.audit_log_entries[0].user_id || client.config.owner.includes(response.data.audit_log_entries[0].user_id) || db.get(`ownermd_${client.user.id}_${response.data.audit_log_entries[0].user_id}`) === true || db.get(`wlmd_${guild.id}_${response.data.audit_log_entries[0].user_id}`) === true
-			if (db.get(`rolesdelwl_${guild.id}`) === true) perm = client.user.id === response.data.audit_log_entries[0].user_id || guild.owner.id === response.data.audit_log_entries[0].user_id || client.config.owner.includes(response.data.audit_log_entries[0].user_id) || db.get(`ownermd_${client.user.id}_${response.data.audit_log_entries[0].user_id}`) === true
-			if (db.get(`rolesdel_${guild.id}`) === true && !perm) {
-				if (db.get(`rolesdelsanction_${guild.id}`) === "ban") {
+			if (await db.get(`rolesdelwl_${guild.id}`) === null) perm = client.user.id === response.data.audit_log_entries[0].user_id || guild.owner.id === response.data.audit_log_entries[0].user_id || client.config.owner.includes(response.data.audit_log_entries[0].user_id) || await db.get(`ownermd_${client.user.id}_${response.data.audit_log_entries[0].user_id}`) === true || await db.get(`wlmd_${guild.id}_${response.data.audit_log_entries[0].user_id}`) === true
+			if (await db.get(`rolesdelwl_${guild.id}`) === true) perm = client.user.id === response.data.audit_log_entries[0].user_id || guild.owner.id === response.data.audit_log_entries[0].user_id || client.config.owner.includes(response.data.audit_log_entries[0].user_id) || await db.get(`ownermd_${client.user.id}_${response.data.audit_log_entries[0].user_id}`) === true
+			if (await db.get(`rolesdel_${guild.id}`) === true && !perm) {
+				if (await db.get(`rolesdelsanction_${guild.id}`) === "ban") {
 
 
 					axios({
@@ -69,7 +67,7 @@ module.exports = (client, role) => {
 						if (raidlog) return raidlog.send(new MessageEmbed().setColor(color).setDescription(`<@${response.data.audit_log_entries[0].user_id}> a supprimé le rôle \`${role.name}\`, mais il n'a pas pu être **ban** !`))
 
 					})
-				} else if (db.get(`rolesdelsanction_${guild.id}`) === "kick") {
+				} else if (await db.get(`rolesdelsanction_${guild.id}`) === "kick") {
 					guild.members.cache.get(response.data.audit_log_entries[0].user_id).kick().then(() => {
 						role.guild.roles.create({
 							data: {
@@ -101,7 +99,7 @@ module.exports = (client, role) => {
 						})
 						if (raidlog) return raidlog.send(new MessageEmbed().setColor(color).setDescription(`<@${response.data.audit_log_entries[0].user_id}> a supprimé le rôle \`${role.name}\`, mais il n'a pas pu être **kick** !`))
 					})
-				} else if (db.get(`rolesdelsanction_${guild.id}`) === "derank") {
+				} else if (await db.get(`rolesdelsanction_${guild.id}`) === "derank") {
 
 					guild.members.cache.get(response.data.audit_log_entries[0].user_id).roles.set([]).then(() => {
 

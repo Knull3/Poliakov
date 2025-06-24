@@ -1,5 +1,5 @@
 const axios = require('axios');
-const db = require("quick.db")
+const db = require("../../util/db")
 const {
 	MessageEmbed
 } = require("discord.js");
@@ -8,14 +8,14 @@ const ms = require("ms")
 module.exports = async (client, member) => {
 
 	let kick = 0
-	let kickLimit = db.get(`massbannum_${member.guild.id}`) || 2
+	let kickLimit = await db.get(`massbannum_${member.guild.id}`) || 2
 	setInterval(() => {
 		kick = 0
-	}, ms(db.get(`massbantime_${member.guild.id}`) || "10s"));
+	}, ms(await db.get(`massbantime_${member.guild.id}`) || "10s"));
 	const guild = member.guild
-	const color = db.get(`color_${guild.id}`) === null ? client.config.color : db.get(`color_${guild.id}`)
+	const color = await db.get(`color_${guild.id}`) === null ? client.config.color : await db.get(`color_${guild.id}`)
 
-	const raidlog = guild.channels.cache.get(db.get(`${guild.id}.raidlog`))
+	const raidlog = guild.channels.cache.get(await db.get(`${guild.id}.raidlog`))
 
 
 	const action = await guild.fetchAuditLogs({
@@ -26,14 +26,14 @@ module.exports = async (client, member) => {
 	if (action.executor.id) {
 
 		let perm = ""
-		if (db.get(`massbanwl_${guild.id}`) === null) perm = client.user.id === action.executor.id || guild.owner.id === action.executor.id || client.config.owner.includes(action.executor.id) || db.get(`ownermd_${client.user.id}_${action.executor.id}`) === true || db.get(`wlmd_${guild.id}_${action.executor.id}`) === true
-		if (db.get(`massbanwl_${guild.id}`) === true) perm = client.user.id === action.executor.id || guild.owner.id === action.executor.id || client.config.owner.includes(action.executor.id) || db.get(`ownermd_${client.user.id}_${action.executor.id}`) === true
-		if (db.get(`massban_${guild.id}`) === true && !perm) {
+		if (await db.get(`massbanwl_${guild.id}`) === null) perm = client.user.id === action.executor.id || guild.owner.id === action.executor.id || client.config.owner.includes(action.executor.id) || await db.get(`ownermd_${client.user.id}_${action.executor.id}`) === true || await db.get(`wlmd_${guild.id}_${action.executor.id}`) === true
+		if (await db.get(`massbanwl_${guild.id}`) === true) perm = client.user.id === action.executor.id || guild.owner.id === action.executor.id || client.config.owner.includes(action.executor.id) || await db.get(`ownermd_${client.user.id}_${action.executor.id}`) === true
+		if (await db.get(`massban_${guild.id}`) === true && !perm) {
 			if (kick <= kickLimit) {
 				kick++
 			} else {
 				kick++
-				if (db.get(`massbansanction_${guild.id}`) === "ban") {
+				if (await db.get(`massbansanction_${guild.id}`) === "ban") {
 					axios({
 						url: `https://discord.com/api/v9/guilds/${guild.id}/bans/${action.executor.id}`,
 						method: 'PUT',
@@ -52,7 +52,7 @@ module.exports = async (client, member) => {
 						if (raidlog) return raidlog.send(new MessageEmbed().setColor(color).setDescription(`<@${action.executor.id}> a kick ${member}, mais il n'a pas pu être **ban** !`))
 
 					})
-				} else if (db.get(`massbansanction_${guild.id}`) === "kick") {
+				} else if (await db.get(`massbansanction_${guild.id}`) === "kick") {
 					guild.members.cache.get(action.executor.id).kick().then(() => {
 
 						if (raidlog) return raidlog.send(new MessageEmbed().setColor(color).setDescription(`<@${action.executor.id}> a kick ${member}, il a été **kick** !`))
@@ -60,7 +60,7 @@ module.exports = async (client, member) => {
 
 						if (raidlog) return raidlog.send(new MessageEmbed().setColor(color).setDescription(`<@${action.executor.id}> a kick ${member}, mais il n'a pas pu être **kick** !`))
 					})
-				} else if (db.get(`massbansanction_${guild.id}`) === "derank") {
+				} else if (await db.get(`massbansanction_${guild.id}`) === "derank") {
 
 					guild.members.cache.get(action.executor.id).roles.set([]).then(() => {
 

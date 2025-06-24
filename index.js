@@ -218,10 +218,18 @@ client.on('interactionCreate', async interaction => {
 					
 					// Répondre uniquement si l'interaction n'a pas encore été traitée
 					if (!interaction.replied && !interaction.deferred) {
-						await interaction.reply({
-							content: 'Une erreur est survenue lors du traitement de ce bouton.',
-							ephemeral: true
-						}).catch(e => console.error('Impossible de répondre au bouton:', e));
+						try {
+							await interaction.reply({
+								content: 'Une erreur est survenue lors du traitement de ce bouton.',
+								ephemeral: true
+							});
+						} catch (e) {
+							if (e.code === 10062) { // Unknown Interaction
+								console.log('Interaction expirée, impossible de répondre au bouton');
+							} else {
+								console.error('Impossible de répondre au bouton:', e);
+							}
+						}
 					}
 				}
 			}
@@ -260,7 +268,11 @@ client.on('interactionCreate', async interaction => {
 					ephemeral: true
 				});
 			} catch (permError) {
-				console.error('Erreur lors de la réponse de permission:', permError);
+				if (permError.code === 10062) {
+					console.log('Interaction expirée, impossible de répondre pour les permissions');
+				} else {
+					console.error('Erreur lors de la réponse de permission:', permError);
+				}
 				return;
 			}
 		}
@@ -268,13 +280,13 @@ client.on('interactionCreate', async interaction => {
 		// Exécuter la commande
 		await command.execute(interaction, client);
 	} catch (error) {
-		console.error(`Erreur dans l'interaction:`, error);
-		
 		// Ne pas essayer de répondre si l'erreur est une interaction inconnue
 		if (error.code === 10062) {
 			console.log('Interaction expirée, impossible de répondre');
 			return;
 		}
+		
+		console.error(`Erreur dans l'interaction:`, error);
 		
 		// Essayer de répondre avec une erreur
 		try {
@@ -288,15 +300,31 @@ client.on('interactionCreate', async interaction => {
 				await interaction.followUp({
 					embeds: [errorEmbed],
 					ephemeral: true
-				}).catch(() => console.log('Impossible d\'envoyer followUp'));
+				}).catch((followUpError) => {
+					if (followUpError.code === 10062) {
+						console.log('Interaction expirée, impossible d\'envoyer followUp');
+					} else {
+						console.error('Impossible d\'envoyer followUp:', followUpError);
+					}
+				});
 			} else {
 				await interaction.reply({
 					embeds: [errorEmbed],
 					ephemeral: true
-				}).catch(() => console.log('Impossible de répondre'));
+				}).catch((replyError) => {
+					if (replyError.code === 10062) {
+						console.log('Interaction expirée, impossible de répondre');
+					} else {
+						console.error('Impossible de répondre:', replyError);
+					}
+				});
 			}
 		} catch (replyError) {
-			console.error('Erreur lors de la réponse à l\'interaction:', replyError);
+			if (replyError.code === 10062) {
+				console.log('Interaction expirée, impossible de répondre');
+			} else {
+				console.error('Erreur lors de la réponse à l\'interaction:', replyError);
+			}
 		}
 	}
 });
