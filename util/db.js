@@ -6,7 +6,7 @@ module.exports = {
     // Méthodes de base
     get: async (key) => {
         try {
-            return await db.get(key);
+            return await await db.get(key);
         } catch (error) {
             console.error(`Erreur lors de l'accès à la base de données (get): ${error.message}`);
             return null;
@@ -15,7 +15,7 @@ module.exports = {
     
     set: async (key, value) => {
         try {
-            return await db.set(key, value);
+            return await await db.set(key, value);
         } catch (error) {
             console.error(`Erreur lors de l'accès à la base de données (set): ${error.message}`);
             return null;
@@ -24,8 +24,8 @@ module.exports = {
     
     add: async (key, value) => {
         try {
-            const currentValue = await db.get(key) || 0;
-            return await db.set(key, currentValue + value);
+            const currentValue = await await db.get(key) || 0;
+            return await await db.set(key, currentValue + value);
         } catch (error) {
             console.error(`Erreur lors de l'accès à la base de données (add): ${error.message}`);
             return null;
@@ -34,8 +34,8 @@ module.exports = {
     
     subtract: async (key, value) => {
         try {
-            const currentValue = await db.get(key) || 0;
-            return await db.set(key, currentValue - value);
+            const currentValue = await await db.get(key) || 0;
+            return await await db.set(key, currentValue - value);
         } catch (error) {
             console.error(`Erreur lors de l'accès à la base de données (subtract): ${error.message}`);
             return null;
@@ -44,9 +44,9 @@ module.exports = {
     
     push: async (key, value) => {
         try {
-            const array = await db.get(key) || [];
+            const array = await await db.get(key) || [];
             array.push(value);
-            return await db.set(key, array);
+            return await await db.set(key, array);
         } catch (error) {
             console.error(`Erreur lors de l'accès à la base de données (push): ${error.message}`);
             return null;
@@ -55,7 +55,7 @@ module.exports = {
     
     delete: async (key) => {
         try {
-            return await db.delete(key);
+            return await await db.delete(key);
         } catch (error) {
             console.error(`Erreur lors de l'accès à la base de données (delete): ${error.message}`);
             return null;
@@ -64,7 +64,7 @@ module.exports = {
     
     has: async (key) => {
         try {
-            return await db.has(key);
+            return await await db.has(key);
         } catch (error) {
             console.error(`Erreur lors de l'accès à la base de données (has): ${error.message}`);
             return false;
@@ -73,7 +73,7 @@ module.exports = {
     
     all: async () => {
         try {
-            const data = await db.all();
+            const data = await await db.all();
             // Convertir au format de l'ancienne API
             return data.map(entry => ({
                 ID: entry.id,
@@ -87,7 +87,7 @@ module.exports = {
     
     fetch: async (key) => {
         try {
-            return await db.get(key);
+            return await await db.get(key);
         } catch (error) {
             console.error(`Erreur lors de l'accès à la base de données (fetch): ${error.message}`);
             return null;

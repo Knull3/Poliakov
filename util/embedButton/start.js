@@ -2,7 +2,7 @@ const {
 	MessageActionRow,
 	MessageButton
 } = require('discord-buttons');
-const db = require("quick.db");
+const db = require("../db");
 
 const buttonInteraction = async function(button, interaction) {
 	if (interaction.interactor !== button.clicker.user || button.message.id !== interaction.message.id) return;

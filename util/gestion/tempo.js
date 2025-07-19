@@ -1,4 +1,4 @@
-const db = require("quick.db");
+const db = require("../db");
 const tempomap = new Map();
 const tempo = function(client, message) {
 
@@ -29,7 +29,7 @@ const tempo = function(client, message) {
 
 
 	client.on("voiceStateUpdate", (oldState, newState) => {
-		let salon = db.get(`jc_${oldState.guild.id}`)
+		let salon = await db.get(`jc_${oldState.guild.id}`)
 		if (salon == null) return;
 
 
@@ -83,10 +83,10 @@ const tempo = function(client, message) {
 
 	})
 	async function tempochannel(user) {
-		let emoji = db.get(`emote_${user.guild.id}`)
+		let emoji = await db.get(`emote_${user.guild.id}`)
 		if (emoji == null) emoji = "Salon de "
 
-		let categoy = db.get(`catggg_${user.guild.id}`)
+		let categoy = await db.get(`catggg_${user.guild.id}`)
 		if (categoy == null) return;
 
 
