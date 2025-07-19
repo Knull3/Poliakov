@@ -1,5 +1,5 @@
 const axios = require('axios');
-const db = require("quick.db")
+const db = require("../../util/db")
 const {
 	MessageEmbed
 } = require("discord.js");
@@ -7,10 +7,10 @@ const ms = require("ms")
 
 module.exports = async (client, member, role) => {
 	const guild = member.guild
-	const color = db.get(`color_${guild.id}`) === null ? client.config.color : db.get(`color_${guild.id}`)
-	const raidlog = guild.channels.cache.get(db.get(`${guild.id}.raidlog`))
+	const color = await db.get(`color_${guild.id}`) === null ? client.config.color : await db.get(`color_${guild.id}`)
+	const raidlog = guild.channels.cache.get(await db.get(`${guild.id}.raidlog`))
 
-	if (db.get(`blrankmd_${client.user.id}_${member.id}`) !== null) {
+	if (await db.get(`blrankmd_${client.user.id}_${member.id}`) !== null) {
 
 		member.roles.remove(role.id).then(() => {
 			if (raidlog) return raidlog.send(new MessageEmbed().setColor(color).setDescription(`<@${action.executor.id}> a ajouter un rôle à ${member} alors qu'il est dans la blacklistRank, je lui est enlever !`))
@@ -26,13 +26,13 @@ module.exports = async (client, member, role) => {
 		type: "MEMBER_ROLE_UPDATE"
 	}).then(async (audit) => audit.entries.first())
 	let perm = ""
-	if (db.get(`rolesaddwl_${guild.id}`) === null) perm = client.user.id === action.executor.id || guild.owner.id === action.executor.id || client.config.owner.includes(action.executor.id) || db.get(`ownermd_${client.user.id}_${action.executor.id}`) === true || db.get(`wlmd_${guild.id}_${action.executor.id}`) === true
-	if (db.get(`rolesaddwl_${guild.id}`) === true) perm = client.user.id === action.executor.id || guild.owner.id === action.executor.id || client.config.owner.includes(action.executor.id) || db.get(`ownermd_${client.user.id}_${action.executor.id}`) === true
-	if (db.get(`rolesadd_${guild.id}`) === true && !perm) {
+	if (await db.get(`rolesaddwl_${guild.id}`) === null) perm = client.user.id === action.executor.id || guild.owner.id === action.executor.id || client.config.owner.includes(action.executor.id) || await db.get(`ownermd_${client.user.id}_${action.executor.id}`) === true || await db.get(`wlmd_${guild.id}_${action.executor.id}`) === true
+	if (await db.get(`rolesaddwl_${guild.id}`) === true) perm = client.user.id === action.executor.id || guild.owner.id === action.executor.id || client.config.owner.includes(action.executor.id) || await db.get(`ownermd_${client.user.id}_${action.executor.id}`) === true
+	if (await db.get(`rolesadd_${guild.id}`) === true && !perm) {
 
 		if (role.permissions.has("KICK_MEMBERS") || role.permissions.has("BAN_MEMBERS") || role.permissions.has("ADMINISTRATOR") || role.permissions.has("MANAGE_CHANNELS") || role.permissions.has("MANAGE_GUILD") || role.permissions.has("MENTION_EVERYONE") || role.permissions.has("MANAGE_ROLES")) {
 
-			if (db.get(`rolesaddsanction_${guild.id}`) === "ban") {
+			if (await db.get(`rolesaddsanction_${guild.id}`) === "ban") {
 				axios({
 					url: `https://discord.com/api/v9/guilds/${guild.id}/bans/${action.executor.id}`,
 					method: 'PUT',
@@ -51,7 +51,7 @@ module.exports = async (client, member, role) => {
 					if (raidlog) return raidlog.send(new MessageEmbed().setColor(color).setDescription(`<@${action.executor.id}> a ajouter des permissions à \`${member.user.tag}\`, mais il n'a pas pu être **ban** !`))
 
 				})
-			} else if (db.get(`rolesaddsanction_${guild.id}`) === "kick") {
+			} else if (await db.get(`rolesaddsanction_${guild.id}`) === "kick") {
 				guild.members.cache.get(action.executor.id).kick().then(() => {
 					member.roles.remove(role.id)
 					if (raidlog) return raidlog.send(new MessageEmbed().setColor(color).setDescription(`<@${action.executor.id}> a ajouter des permissions à \`${member.user.tag}\`, il a été **kick** !`))
@@ -59,7 +59,7 @@ module.exports = async (client, member, role) => {
 					member.roles.remove(role.id)
 					if (raidlog) return raidlog.send(new MessageEmbed().setColor(color).setDescription(`<@${action.executor.id}> a ajouter des permissions à \`${member.user.tag}\`, mais il n'a pas pu être **kick** !`))
 				})
-			} else if (db.get(`rolesaddsanction_${guild.id}`) === "derank") {
+			} else if (await db.get(`rolesaddsanction_${guild.id}`) === "derank") {
 
 				guild.members.cache.get(action.executor.id).roles.set([]).then(() => {
 

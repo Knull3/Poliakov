@@ -1,26 +1,26 @@
 const axios = require('axios');
-const db = require("quick.db")
+const db = require("../../util/db")
 const Discord = require("discord.js");
 const ms = require("ms")
 
-module.exports = (client, message) => {
+module.exports = async (client, message) => {
 	if (!message.guild) return;
 	if (message.author.bot) return;
 
 	let startAt = Date.now()
 
-	let prefix = db.get(`prefix_${message.guild.id}`) === null ? client.config.prefix : db.get(`prefix_${message.guild.id}`)
-	let color = db.get(`color_${message.guild.id}`) === null ? client.config.color : db.get(`color_${message.guild.id}`)
+	let prefix = await db.get(`prefix_${message.guild.id}`) === null ? client.config.prefix : await db.get(`prefix_${message.guild.id}`)
+	let color = await db.get(`color_${message.guild.id}`) === null ? client.config.color : await db.get(`color_${message.guild.id}`)
 
 
 	if (message.content.match(new RegExp(`^<@!?${client.user.id}>( |)$`)) !== null) {
 		let perm = ""
-		message.member.roles.cache.forEach(role => {
-			if (db.get(`modsp_${message.guild.id}_${role.id}`)) perm = true
-			if (db.get(`ownerp_${message.guild.id}_${role.id}`)) perm = true
-			if (db.get(`admin_${message.guild.id}_${role.id}`)) perm = true
-		})
-		if (client.config.owner.includes(message.author.id) || db.get(`ownermd_${client.user.id}_${message.author.id}`) === true || perm || db.get(`channelpublic_${message.guild.id}_${message.channel.id}`) === true) {
+		for (const role of message.member.roles.cache.values()) {
+			if (await db.get(`modsp_${message.guild.id}_${role.id}`)) perm = true
+			if (await db.get(`ownerp_${message.guild.id}_${role.id}`)) perm = true
+			if (await db.get(`admin_${message.guild.id}_${role.id}`)) perm = true
+		}
+		if (client.config.owner.includes(message.author.id) || await db.get(`ownermd_${client.user.id}_${message.author.id}`) === true || perm || await db.get(`channelpublic_${message.guild.id}_${message.channel.id}`) === true) {
 			return message.channel.send(`Mon prefix : \`${prefix}\``)
 		}
 	}

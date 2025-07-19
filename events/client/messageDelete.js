@@ -1,5 +1,5 @@
 const axios = require('axios');
-const db = require("quick.db")
+const db = require("../../util/db")
 const {
 	MessageEmbed
 } = require("discord.js");

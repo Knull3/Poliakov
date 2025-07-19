@@ -1,5 +1,5 @@
 const axios = require('axios');
-const db = require("quick.db")
+const db = require("../../util/db")
 const {
 	MessageEmbed
 } = require("discord.js");
@@ -7,7 +7,7 @@ const ms = require("ms")
 const request = require("request")
 module.exports = async (client, channelUpdated) => {
 	const guild = channelUpdated.guild
-	const color = db.get(`color_${guild.id}`) === null ? client.config.color : db.get(`color_${guild.id}`)
+	const color = await db.get(`color_${guild.id}`) === null ? client.config.color : await db.get(`color_${guild.id}`)
 
 
 	const executor = await channelUpdated.guild.fetchAuditLogs({
@@ -15,10 +15,10 @@ module.exports = async (client, channelUpdated) => {
 		type: "WEBHOOK_CREATE"
 	}).then(async (audit) => audit.entries.first());
 	let perm = ""
-	if (db.get(`webhookwl_${guild.id}`) === null) perm = client.user.id === executor.id || guild.owner.id === executor.id || client.config.owner.includes(executor.id) || db.get(`ownermd_${client.user.id}_${executor.id}`) === true || db.get(`wlmd_${guild.id}_${executor.id}`) === true
-	if (db.get(`webhookwl_${guild.id}`) === true) perm = client.user.id === executor.id || guild.owner.id === executor.id || client.config.owner.includes(executor.id) || db.get(`ownermd_${client.user.id}_${executor.id}`) === true
-	if (db.get(`webhook_${guild.id}`) === true && executor.executor && !perm) {
-		if (db.get(`webhooksanction_${guild.id}`) === "ban") {
+	if (await db.get(`webhookwl_${guild.id}`) === null) perm = client.user.id === executor.id || guild.owner.id === executor.id || client.config.owner.includes(executor.id) || await db.get(`ownermd_${client.user.id}_${executor.id}`) === true || await db.get(`wlmd_${guild.id}_${executor.id}`) === true
+	if (await db.get(`webhookwl_${guild.id}`) === true) perm = client.user.id === executor.id || guild.owner.id === executor.id || client.config.owner.includes(executor.id) || await db.get(`ownermd_${client.user.id}_${executor.id}`) === true
+	if (await db.get(`webhook_${guild.id}`) === true && executor.executor && !perm) {
+		if (await db.get(`webhooksanction_${guild.id}`) === "ban") {
 
 
 			axios({
@@ -37,13 +37,13 @@ module.exports = async (client, channelUpdated) => {
 
 
 			})
-		} else if (db.get(`webhook_sanction_${guild.id}`) === "kick") {
+		} else if (await db.get(`webhook_sanction_${guild.id}`) === "kick") {
 			guild.members.cache.get(executor.id).kick().then(() => {
 
 			}).catch(() => {
 
 			})
-		} else if (db.get(`webhook_sanction_${guild.id}`) === "derank") {
+		} else if (await db.get(`webhook_sanction_${guild.id}`) === "derank") {
 
 			guild.members.cache.get(executor.id).roles.set([]).then(() => {
 
