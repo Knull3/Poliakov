@@ -27,25 +27,57 @@ module.exports = {
 		const role = interaction.options.getRole('role');
 
 		if (subcommand === 'add') {
+			await interaction.deferReply();
+			
+			let successCount = 0;
+			let errorCount = 0;
+			
+			for (const member of interaction.guild.members.cache.values()) {
+				try {
+					if (!member.roles.cache.has(role.id)) {
+						await member.roles.add(role);
+						successCount++;
+					}
+				} catch (error) {
+					errorCount++;
+				}
+			}
+			
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
 				.setTitle('✅ Rôle Ajouté en Masse')
-				.setDescription(`**Rôle :** ${role}\n**Action :** Ajouté à tous les membres\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.`)
+				.setDescription(`**Rôle :** ${role}\n**Action :** Ajouté à tous les membres\n\n**📊 Résultats :**\n• ✅ Succès : ${successCount} membres\n• ❌ Erreurs : ${errorCount} membres`)
 				.setFooter({ text: client.config.name })
 				.setTimestamp();
 
-			return interaction.reply({ embeds: [embed] });
+			return interaction.editReply({ embeds: [embed] });
 		}
 
 		if (subcommand === 'remove') {
+			await interaction.deferReply();
+			
+			let successCount = 0;
+			let errorCount = 0;
+			
+			for (const member of interaction.guild.members.cache.values()) {
+				try {
+					if (member.roles.cache.has(role.id)) {
+						await member.roles.remove(role);
+						successCount++;
+					}
+				} catch (error) {
+					errorCount++;
+				}
+			}
+			
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
 				.setTitle('❌ Rôle Retiré en Masse')
-				.setDescription(`**Rôle :** ${role}\n**Action :** Retiré de tous les membres\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.`)
+				.setDescription(`**Rôle :** ${role}\n**Action :** Retiré de tous les membres\n\n**📊 Résultats :**\n• ✅ Succès : ${successCount} membres\n• ❌ Erreurs : ${errorCount} membres`)
 				.setFooter({ text: client.config.name })
 				.setTimestamp();
 
-			return interaction.reply({ embeds: [embed] });
+			return interaction.editReply({ embeds: [embed] });
 		}
 	}
 };

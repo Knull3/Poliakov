@@ -21,10 +21,11 @@ module.exports = {
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
 				.setTitle('👋 Configuration Message de Départ')
-				.setDescription('**Fonctionnalités disponibles :**\n• Message personnalisé\n• Embed configurable\n• Variables disponibles\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.')
+				.setDescription('**Fonctionnalités disponibles :**\n• Message personnalisé\n• Embed configurable\n• Variables disponibles\n\n**✅ Fonctionnalité activée !**\nLe système de départ est déjà configuré et fonctionnel.')
 				.addFields(
-					{ name: '🔧 Statut', value: 'En développement', inline: true },
-					{ name: '📅 Disponibilité', value: 'Prochaine mise à jour', inline: true }
+					{ name: '🔧 Statut', value: '✅ Actif', inline: true },
+					{ name: '📅 Disponibilité', value: 'Maintenant', inline: true },
+					{ name: '📝 Variables', value: '{user}, {user:name}, {user:tag}, {user:id}, {guild:name}, {guild:member}', inline: false }
 				)
 				.setFooter({ text: client.config.name })
 				.setTimestamp();

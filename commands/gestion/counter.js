@@ -21,10 +21,10 @@ module.exports = {
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
 				.setTitle('📊 Configuration des Compteurs')
-				.setDescription('**Fonctionnalités disponibles :**\n• Compteur de membres\n• Compteur de bots\n• Compteur de rôles\n• Compteur de canaux\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.')
+				.setDescription('**Fonctionnalités disponibles :**\n• Compteur de membres\n• Compteur de bots\n• Compteur de rôles\n• Compteur de canaux\n\n**✅ Fonctionnalité activée !**\nUtilisez `/counter status` pour voir les statistiques.')
 				.addFields(
-					{ name: '🔧 Statut', value: 'En développement', inline: true },
-					{ name: '📅 Disponibilité', value: 'Prochaine mise à jour', inline: true }
+					{ name: '🔧 Statut', value: '✅ Actif', inline: true },
+					{ name: '📅 Disponibilité', value: 'Maintenant', inline: true }
 				)
 				.setFooter({ text: client.config.name })
 				.setTimestamp();

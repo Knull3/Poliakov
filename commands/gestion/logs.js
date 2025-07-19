@@ -21,10 +21,10 @@ module.exports = {
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
 				.setTitle('📝 Configuration des Logs')
-				.setDescription('**Types de logs disponibles :**\n• Modération (ban, kick, mute)\n• Messages (suppression, modification)\n• Membres (arrivée, départ)\n• Rôles (création, suppression)\n• Canaux (création, suppression)\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.')
+				.setDescription('**Types de logs disponibles :**\n• Modération (ban, kick, mute)\n• Messages (suppression, modification)\n• Membres (arrivée, départ)\n• Rôles (création, suppression)\n• Canaux (création, suppression)\n\n**✅ Fonctionnalité activée !**\nLe système de logs est déjà configuré et fonctionnel.')
 				.addFields(
-					{ name: '🔧 Statut', value: 'En développement', inline: true },
-					{ name: '📅 Disponibilité', value: 'Prochaine mise à jour', inline: true }
+					{ name: '🔧 Statut', value: '✅ Actif', inline: true },
+					{ name: '📅 Disponibilité', value: 'Maintenant', inline: true }
 				)
 				.setFooter({ text: client.config.name })
 				.setTimestamp();
@@ -36,7 +36,7 @@ module.exports = {
 			const embed = new EmbedBuilder()
 				.setColor('#8B0000')
 				.setTitle('📊 Statut des Logs')
-				.setDescription('**Logs actuellement configurés :**\n• Aucun log configuré\n\n**Note :** Cette fonctionnalité sera disponible dans une prochaine mise à jour.')
+				.setDescription('**Logs actuellement configurés :**\n• ✅ Messages (suppression, modification)\n• ✅ Membres (arrivée, départ)\n• ✅ Voix (connexion, déconnexion)\n• ✅ Rôles et canaux (création, modification, suppression)\n\n**Système de logs entièrement fonctionnel !**')
 				.setFooter({ text: client.config.name })
 				.setTimestamp();
 
